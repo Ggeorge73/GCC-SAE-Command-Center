@@ -541,7 +541,9 @@ class GCCSAEAPITester:
             self.test_compliance_checklists_auto_creation,
             self.test_document_upload,
             self.test_get_documents,
-            self.test_ai_chat_mocked,
+            self.test_ai_chat_real_gemini,
+            self.test_multi_turn_conversation,
+            self.test_jurisdiction_specific_responses,
             self.test_audit_trail,
             self.test_stats_endpoint
         ]
