@@ -33,19 +33,12 @@ import {
 } from "@/components/ui/dialog";
 import { Toaster, toast } from "sonner";
 
-// Firebase imports
+// Firebase imports for storage
 import {
-  createDealRoom as fbCreateDealRoom,
-  getDealRooms as fbGetDealRooms,
-  deleteDealRoom as fbDeleteDealRoom,
-  createDefaultChecklists,
-  getComplianceChecklists as fbGetComplianceChecklists,
-  updateComplianceStatus,
-  uploadDocument as fbUploadDocument,
-  getDocuments as fbGetDocuments,
-  deleteDocument as fbDeleteDocument,
-  getAuditTrail as fbGetAuditTrail,
-  createAdvisoryLog,
+  uploadToFirebaseStorage,
+  deleteFromFirebaseStorage,
+  isFirebaseAvailable,
+  computeFileHash,
 } from "@/lib/firebase";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -114,11 +107,15 @@ const GCCLogo = () => (
   </div>
 );
 
-// Firebase Badge
-const FirebaseBadge = () => (
-  <div className="flex items-center gap-1 px-2 py-1 bg-orange-900/20 text-orange-400 border border-orange-800/30 rounded-sm">
-    <Cloud className="w-3 h-3" />
-    <span className="text-[10px] font-bold">FIREBASE</span>
+// Storage Badge
+const StorageBadge = ({ useFirebase }) => (
+  <div className={`flex items-center gap-1 px-2 py-1 rounded-sm ${
+    useFirebase 
+      ? "bg-orange-900/20 text-orange-400 border border-orange-800/30" 
+      : "bg-blue-900/20 text-blue-400 border border-blue-800/30"
+  }`}>
+    {useFirebase ? <Cloud className="w-3 h-3" /> : <Database className="w-3 h-3" />}
+    <span className="text-[10px] font-bold">{useFirebase ? "FIREBASE" : "MONGODB"}</span>
   </div>
 );
 
@@ -155,7 +152,6 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
           <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground-muted)]">
             Active Matters
           </span>
-          <FirebaseBadge />
         </div>
 
         {/* New Matter Button */}
@@ -283,9 +279,9 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
                       <span className="text-xs font-medium truncate flex-1">{item.name}</span>
                       <StatusBadge status={item.status} />
                     </div>
-                    {item.regulatoryBody && (
+                    {item.regulatory_body && (
                       <p className="text-[10px] text-[var(--foreground-muted)]">
-                        {item.regulatoryBody}
+                        {item.regulatory_body}
                       </p>
                     )}
                   </div>
@@ -305,7 +301,7 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
 };
 
 // Header Component
-const Header = ({ selectedDealRoom, activeTab, setActiveTab }) => (
+const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage }) => (
   <header className="glass-header h-14 flex items-center justify-between px-4 sticky top-0 z-20">
     <div className="flex items-center gap-4">
       {/* Mobile menu */}
@@ -467,22 +463,6 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
         timestamp: response.data.timestamp,
       };
       setMessages((prev) => [...prev, assistantMessage]);
-
-      // Log to Firebase if deal room selected
-      if (selectedDealRoom) {
-        try {
-          await createAdvisoryLog({
-            dealRoomId: selectedDealRoom.id,
-            type: 'legal_opinion',
-            content: response.data.response,
-            promptUsed: inputValue,
-            jurisdictionContext: jurisdiction,
-            referenceId: response.data.reference_id,
-          });
-        } catch (e) {
-          console.warn('Could not log to Firebase:', e);
-        }
-      }
     } catch (error) {
       console.error("Chat error:", error);
       toast.error("Failed to get response from the Advocate");
@@ -570,7 +550,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
 };
 
 // Document Vault Component
-const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefresh, isUploading, uploadProgress }) => {
+const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefresh, isUploading, uploadProgress, useFirebaseStorage }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("Legal_Drafts");
   const [searchQuery, setSearchQuery] = useState("");
@@ -603,8 +583,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
   };
 
   const filteredDocs = documents.filter((doc) => {
-    const matchesSearch = doc.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          doc.file_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = doc.file_name?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -615,7 +594,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="font-serif text-lg text-[var(--primary)]">THE VAULT</h3>
-            <FirebaseBadge />
+            <StorageBadge useFirebase={useFirebaseStorage} />
           </div>
           <button
             onClick={onRefresh}
@@ -652,7 +631,9 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
           {isUploading ? (
             <div className="space-y-2">
               <Cloud className="w-6 h-6 mx-auto text-[var(--primary)] animate-pulse" />
-              <p className="text-xs text-[var(--foreground-muted)]">Uploading to Firebase...</p>
+              <p className="text-xs text-[var(--foreground-muted)]">
+                {useFirebaseStorage ? "Uploading to Firebase Storage..." : "Uploading to MongoDB..."}
+              </p>
               <Progress value={uploadProgress} className="h-1" />
             </div>
           ) : (
@@ -713,17 +694,17 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium truncate">{doc.fileName || doc.file_name}</span>
-                      <StatusBadge status={doc.indexingStatus || doc.indexing_status || 'indexed'} />
+                      <span className="text-sm font-medium truncate">{doc.file_name}</span>
+                      <StatusBadge status={doc.indexing_status || 'indexed'} />
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-[var(--foreground-muted)]">
                       <span>v{doc.version || '1.0'}</span>
-                      <span>{formatDate(doc.uploadedAt || doc.uploaded_at)}</span>
-                      <span>{formatFileSize(doc.fileSize || doc.file_size)}</span>
+                      <span>{formatDate(doc.uploaded_at)}</span>
+                      <span>{formatFileSize(doc.file_size)}</span>
                     </div>
-                    {doc.downloadURL && (
+                    {doc.download_url && (
                       <a 
-                        href={doc.downloadURL} 
+                        href={doc.download_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-[10px] text-[var(--primary)] hover:underline flex items-center gap-1 mt-1"
@@ -762,33 +743,30 @@ const AuditTrail = ({ selectedDealRoom, auditData }) => {
   }
 
   const allEvents = [
-    ...(auditData.advisoryLogs || auditData.advisory_logs || []).map((log) => ({
+    ...(auditData.advisory_logs || []).map((log) => ({
       type: "advisory",
       title: log.type === "legal_opinion" ? "Legal Opinion" : "Strategic Directive",
       content: (log.content || '').substring(0, 100) + "...",
       timestamp: log.timestamp,
     })),
-    ...(auditData.documentUploads || auditData.document_uploads || []).map((doc) => ({
+    ...(auditData.document_uploads || []).map((doc) => ({
       type: "document",
-      title: `Document Uploaded: ${doc.fileName || doc.file_name}`,
-      content: `Folder: ${doc.folder} | Hash: ${(doc.fileHash || doc.file_hash || '').substring(0, 8)}...`,
-      timestamp: doc.uploadedAt || doc.uploaded_at,
+      title: `Document Uploaded: ${doc.file_name}`,
+      content: `Folder: ${doc.folder} | Hash: ${(doc.file_hash || '').substring(0, 8)}...`,
+      timestamp: doc.uploaded_at,
     })),
-    ...(auditData.complianceUpdates || auditData.compliance_updates || []).map((cl) => ({
+    ...(auditData.compliance_updates || []).map((cl) => ({
       type: "compliance",
       title: `Compliance: ${cl.name}`,
       content: `Status: ${(cl.status || 'pending').toUpperCase()}`,
-      timestamp: cl.updatedAt || cl.updated_at || cl.createdAt || cl.created_at,
+      timestamp: cl.updated_at || cl.created_at,
     })),
   ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-[var(--navy-light)]">
-        <div className="flex items-center gap-2">
-          <h3 className="font-serif text-lg text-[var(--primary)]">AUDIT TRAIL</h3>
-          <FirebaseBadge />
-        </div>
+        <h3 className="font-serif text-lg text-[var(--primary)]">AUDIT TRAIL</h3>
         <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
           Complete transaction history
         </p>
@@ -831,53 +809,53 @@ function App() {
   const [selectedDealRoom, setSelectedDealRoom] = useState(null);
   const [complianceItems, setComplianceItems] = useState([]);
   const [documents, setDocuments] = useState([]);
-  const [auditData, setAuditData] = useState({ advisoryLogs: [], documentUploads: [], complianceUpdates: [] });
+  const [auditData, setAuditData] = useState({ advisory_logs: [], document_uploads: [], compliance_updates: [] });
   const [activeTab, setActiveTab] = useState("vault");
   const [jurisdiction, setJurisdiction] = useState("NIGERIA (CAMA 2020)");
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [useFirebaseStorage, setUseFirebaseStorage] = useState(isFirebaseAvailable());
 
-  // Fetch deal rooms from Firebase
+  // Fetch deal rooms
   const fetchDealRooms = useCallback(async () => {
     try {
-      const rooms = await fbGetDealRooms();
-      setDealRooms(rooms);
+      const response = await axios.get(`${API}/deal-rooms`);
+      setDealRooms(response.data);
     } catch (error) {
-      console.error("Error fetching deal rooms from Firebase:", error);
-      toast.error("Failed to fetch deal rooms");
+      console.error("Error fetching deal rooms:", error);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Fetch compliance items from Firebase
+  // Fetch compliance items
   const fetchCompliance = useCallback(async (dealRoomId) => {
     try {
-      const checklists = await fbGetComplianceChecklists(dealRoomId);
-      setComplianceItems(checklists);
+      const response = await axios.get(`${API}/compliance-checklists/${dealRoomId}`);
+      setComplianceItems(response.data);
     } catch (error) {
-      console.error("Error fetching compliance from Firebase:", error);
+      console.error("Error fetching compliance:", error);
     }
   }, []);
 
-  // Fetch documents from Firebase
+  // Fetch documents
   const fetchDocuments = useCallback(async (dealRoomId) => {
     try {
-      const docs = await fbGetDocuments(dealRoomId);
-      setDocuments(docs);
+      const response = await axios.get(`${API}/documents/${dealRoomId}`);
+      setDocuments(response.data);
     } catch (error) {
-      console.error("Error fetching documents from Firebase:", error);
+      console.error("Error fetching documents:", error);
     }
   }, []);
 
-  // Fetch audit trail from Firebase
+  // Fetch audit trail
   const fetchAuditTrail = useCallback(async (dealRoomId) => {
     try {
-      const audit = await fbGetAuditTrail(dealRoomId);
-      setAuditData(audit);
+      const response = await axios.get(`${API}/audit-trail/${dealRoomId}`);
+      setAuditData(response.data);
     } catch (error) {
-      console.error("Error fetching audit trail from Firebase:", error);
+      console.error("Error fetching audit trail:", error);
     }
   }, []);
 
@@ -896,36 +874,29 @@ function App() {
     } else {
       setComplianceItems([]);
       setDocuments([]);
-      setAuditData({ advisoryLogs: [], documentUploads: [], complianceUpdates: [] });
+      setAuditData({ advisory_logs: [], document_uploads: [], compliance_updates: [] });
     }
   }, [selectedDealRoom, fetchCompliance, fetchDocuments, fetchAuditTrail]);
 
-  // Create deal room in Firebase
+  // Create deal room
   const handleCreateDealRoom = async (name, jurisdiction) => {
     try {
-      const newRoom = await fbCreateDealRoom({
-        name,
-        jurisdiction,
-        status: 'active',
-      });
-      
-      // Create default compliance checklists
-      await createDefaultChecklists(newRoom.id, jurisdiction);
-      
-      // Refresh and select
-      await fetchDealRooms();
-      setSelectedDealRoom(newRoom);
-      toast.success("Deal room created in Firebase");
+      const response = await axios.post(`${API}/deal-rooms`, { name, jurisdiction });
+      setDealRooms((prev) => [...prev, response.data]);
+      setSelectedDealRoom(response.data);
+      toast.success("Deal room created");
     } catch (error) {
       console.error("Error creating deal room:", error);
       toast.error("Failed to create deal room");
     }
   };
 
-  // Update compliance status in Firebase
+  // Update compliance status
   const handleUpdateCompliance = async (checklistId, status) => {
     try {
-      await updateComplianceStatus(checklistId, status);
+      const formData = new FormData();
+      formData.append('status', status);
+      await axios.put(`${API}/compliance-checklists/${checklistId}`, formData);
       if (selectedDealRoom) {
         await fetchCompliance(selectedDealRoom.id);
         await fetchAuditTrail(selectedDealRoom.id);
@@ -937,7 +908,7 @@ function App() {
     }
   };
 
-  // Upload document to Firebase Storage
+  // Upload document - try Firebase first, fallback to MongoDB
   const handleUploadDocument = async (file, folder) => {
     if (!selectedDealRoom) {
       toast.error("Please select a deal room first");
@@ -948,30 +919,95 @@ function App() {
     setUploadProgress(0);
 
     try {
-      await fbUploadDocument(
-        file,
-        selectedDealRoom.id,
-        folder,
-        'Team',
-        (progress) => setUploadProgress(progress)
-      );
-      toast.success(`${file.name} uploaded to Firebase Storage`);
+      // Try Firebase Storage first
+      if (useFirebaseStorage) {
+        try {
+          const firebaseResult = await uploadToFirebaseStorage(
+            file,
+            selectedDealRoom.id,
+            folder,
+            (progress) => setUploadProgress(progress)
+          );
+
+          // Save metadata to MongoDB backend
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("deal_room_id", selectedDealRoom.id);
+          formData.append("folder", folder);
+          formData.append("storage_path", firebaseResult.storagePath);
+          formData.append("download_url", firebaseResult.downloadURL);
+          formData.append("file_hash", firebaseResult.fileHash);
+
+          await axios.post(`${API}/documents/upload`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+          toast.success(`${file.name} uploaded to Firebase Storage`);
+        } catch (firebaseError) {
+          console.warn("Firebase upload failed, falling back to MongoDB:", firebaseError);
+          setUseFirebaseStorage(false);
+          // Fall through to MongoDB upload
+          throw firebaseError;
+        }
+      } else {
+        // Upload directly to MongoDB
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("deal_room_id", selectedDealRoom.id);
+        formData.append("folder", folder);
+
+        await axios.post(`${API}/documents/upload`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            const progress = (progressEvent.loaded / progressEvent.total) * 100;
+            setUploadProgress(progress);
+          },
+        });
+
+        toast.success(`${file.name} uploaded`);
+      }
+
       await fetchDocuments(selectedDealRoom.id);
       await fetchAuditTrail(selectedDealRoom.id);
     } catch (error) {
       console.error("Error uploading document:", error);
-      toast.error("Failed to upload document");
+      
+      // If Firebase failed, try MongoDB as fallback
+      if (useFirebaseStorage) {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("deal_room_id", selectedDealRoom.id);
+          formData.append("folder", folder);
+
+          await axios.post(`${API}/documents/upload`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress: (progressEvent) => {
+              const progress = (progressEvent.loaded / progressEvent.total) * 100;
+              setUploadProgress(progress);
+            },
+          });
+
+          toast.success(`${file.name} uploaded (using MongoDB fallback)`);
+          await fetchDocuments(selectedDealRoom.id);
+          await fetchAuditTrail(selectedDealRoom.id);
+        } catch (fallbackError) {
+          toast.error("Failed to upload document");
+        }
+      } else {
+        toast.error("Failed to upload document");
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
   };
 
-  // Delete document from Firebase
+  // Delete document
   const handleDeleteDocument = async (documentId) => {
     try {
-      await fbDeleteDocument(documentId);
-      toast.success("Document deleted from Firebase");
+      await axios.delete(`${API}/documents/${documentId}`);
+      toast.success("Document deleted");
       if (selectedDealRoom) {
         await fetchDocuments(selectedDealRoom.id);
         await fetchAuditTrail(selectedDealRoom.id);
@@ -1003,6 +1039,7 @@ function App() {
           selectedDealRoom={selectedDealRoom}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          useFirebaseStorage={useFirebaseStorage}
         />
 
         {/* Content area */}
@@ -1027,6 +1064,7 @@ function App() {
                 onRefresh={() => selectedDealRoom && fetchDocuments(selectedDealRoom.id)}
                 isUploading={isUploading}
                 uploadProgress={uploadProgress}
+                useFirebaseStorage={useFirebaseStorage}
               />
             ) : (
               <AuditTrail
