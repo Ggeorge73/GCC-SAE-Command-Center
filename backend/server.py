@@ -504,12 +504,19 @@ async def chat_with_advocate(request: ChatRequest):
         # Get AI response
         ai_response = await chat.send_message(user_message)
         
-        # Format response with reference
-        formatted_response = f"**Strategic Advisory (REF: {reference_id})**\n\n{ai_response}"
+        # Format response with proper header and reference at top
+        formatted_response = f"""**STRATEGIC ADVISORY**
+**REF:** {reference_id}
+**JURISDICTION:** {request.jurisdiction}
+**DATE:** {datetime.now(timezone.utc).strftime('%d %B %Y')}
+
+---
+
+{ai_response}"""
         
         # Add document context if available
         if context_docs:
-            formatted_response += f"\n\n*Documents referenced from Vault: {', '.join(context_docs)}*"
+            formatted_response += f"\n\n---\n*Documents referenced from Vault: {', '.join(context_docs)}*"
         
         response = formatted_response
         
