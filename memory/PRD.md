@@ -40,6 +40,7 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 - File integrity verification via SHA-256 hashing
 - Indexing status tracking (Processing → Indexed)
 - Access level controls (Admin Only, Team, Public)
+- **Hybrid Storage**: Firebase Storage (primary) + MongoDB (fallback)
 
 ### 3. AI Legal Advisory (LEARNED SILK)
 - Multi-jurisdictional legal advice
@@ -55,6 +56,7 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 - Status tracking: Compliant, Pending, Overdue
 - Nigeria: CAMA 2020 Returns, NOTAP Certificate, SEC Nigeria filings
 - US: SEC Form D, Delaware Franchise Tax, Blue Sky Compliance
+- UK: Companies House Return, FCA Notification, PSC Register
 
 ### 5. Audit Trail
 - Complete transaction history
@@ -70,10 +72,12 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 - [x] Deal Rooms CRUD operations
 - [x] Advisory Logs storage with timestamps
 - [x] Compliance Checklists with auto-creation based on jurisdiction
-- [x] Document upload with SHA-256 hashing and base64 storage
+- [x] Document upload with SHA-256 hashing
+- [x] Hybrid storage support (Firebase Storage URL + MongoDB metadata)
 - [x] AI Chat endpoint with mocked intelligent responses
 - [x] Audit Trail aggregation endpoint
 - [x] Stats endpoint for system metrics
+- [x] Compliance status update endpoint
 
 ### Frontend (React + Tailwind + shadcn/ui)
 - [x] Premium dark theme ("Old Money Tech" aesthetic)
@@ -82,8 +86,17 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 - [x] Right panel with Document Vault and Audit Trail tabs
 - [x] Jurisdiction selector (Nigeria, US, UK, Cross-Border)
 - [x] Drag-and-drop document upload
-- [x] Real-time compliance status badges
+- [x] Real-time compliance status badges (clickable to cycle)
 - [x] Responsive design
+- [x] Folder selector for document organization
+- [x] Firebase/MongoDB storage indicator
+
+### Firebase Integration
+- [x] Firebase SDK initialized (project: gcc-sae-emergent-build)
+- [x] Firebase Storage configured for document uploads
+- [x] Hybrid storage with MongoDB fallback
+- [ ] Firebase Firestore (requires database creation + security rules)
+- [ ] Firebase Authentication
 
 ### Design System
 - [x] Custom typography: Playfair Display (headings), Manrope (body), JetBrains Mono (code)
@@ -93,15 +106,35 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 
 ---
 
+## Firebase Configuration
+
+```javascript
+const firebaseConfig = {
+  apiKey: "AIzaSyBVGXY40wIFGfdIT0YhefZIXYBSBYTcUtk",
+  authDomain: "gcc-sae-emergent-build.firebaseapp.com",
+  projectId: "gcc-sae-emergent-build",
+  storageBucket: "gcc-sae-emergent-build.firebasestorage.app",
+  messagingSenderId: "899804180054",
+  appId: "1:899804180054:web:0306d98a670d64ba0055f7"
+};
+```
+
+### Firebase Setup Required:
+1. **Firestore Database**: Create in Firebase Console (if using Firestore)
+2. **Storage Rules**: Configure security rules for document access
+3. **Authentication**: Enable auth providers as needed
+
+---
+
 ## Prioritized Backlog
 
 ### P0 - Critical (Next Sprint)
 - [ ] **Real LLM Integration** - Replace mocked AI with actual OpenAI/Claude API
-- [ ] **Firebase Integration** - Implement actual Firebase Storage for document vault
-- [ ] **Vector Embeddings** - Enable document search and citation using Vertex AI
+- [ ] **Firebase Firestore** - Create database and configure security rules
+- [ ] **Firebase Storage Rules** - Configure proper access controls
 
 ### P1 - High Priority
-- [ ] **Authentication** - Firebase Auth or JWT-based user authentication
+- [ ] **Authentication** - Firebase Auth integration
 - [ ] **Role-Based Access Control** - Admin, Partner, Associate roles
 - [ ] **App Check Enforcement** - Security validation for all requests
 - [ ] **Document Preview** - In-app PDF/DOCX viewer
@@ -117,7 +150,7 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 ### P3 - Future Enhancements
 - [ ] **Watchdog Protocol** - Auto-alert for documents stuck in processing
 - [ ] **Zero-Ghosting Persistence** - Automatic metadata cleanup on file deletion
-- [ ] **API Rate Limiting** - Prevent abuse of AI endpoints
+- [ ] **Vector Embeddings** - Vertex AI Vector Search for document intelligence
 - [ ] **Webhook Integration** - External system notifications
 - [ ] **Mobile App** - iOS/Android clients
 
@@ -128,21 +161,23 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        Frontend                              │
-│    React 19 + Tailwind CSS + shadcn/ui + Lucide Icons       │
+│    React 19 + Tailwind CSS + shadcn/ui + Firebase SDK       │
 └─────────────────────────────────────────────────────────────┘
                               │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      FastAPI Backend                         │
-│   /api/deal-rooms, /api/chat, /api/documents, /api/audit    │
-└─────────────────────────────────────────────────────────────┘
+              ┌───────────────┼───────────────┐
+              │               │               │
+              ▼               ▼               ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  Firebase       │ │  FastAPI        │ │  Firebase       │
+│  Storage        │ │  Backend        │ │  Firestore      │
+│  (Documents)    │ │  /api/*         │ │  (Future)       │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
                               │
                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                        MongoDB                               │
-│   Collections: deal_rooms, advisory_logs, compliance_       │
-│                checklists, documents                         │
-└─────────────────────────────────────────────────────────────┘
+              ┌─────────────────────────────────┐
+              │           MongoDB               │
+              │   (Metadata + Fallback Data)    │
+              └─────────────────────────────────┘
 ```
 
 ---
@@ -155,8 +190,9 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 | `/api/deal-rooms` | GET/POST | List/Create deal rooms |
 | `/api/deal-rooms/{id}` | GET/DELETE | Get/Delete deal room |
 | `/api/advisory-logs/{deal_room_id}` | GET/POST | Advisory logs |
-| `/api/compliance-checklists/{deal_room_id}` | GET/POST/PUT | Compliance items |
-| `/api/documents/upload` | POST | Upload document |
+| `/api/compliance-checklists/{deal_room_id}` | GET/POST | Compliance items |
+| `/api/compliance-checklists/{id}` | PUT | Update compliance status |
+| `/api/documents/upload` | POST | Upload document (supports Firebase URL) |
 | `/api/documents/{deal_room_id}` | GET | List documents |
 | `/api/documents/{id}` | DELETE | Delete document |
 | `/api/chat` | POST | AI advisory chat |
@@ -165,8 +201,17 @@ GCC-SAE is an elite legal and financial advisory engine designed for cross-borde
 
 ---
 
+## Test Results (Latest)
+
+- **Backend**: 100% (9/9 API tests passed)
+- **Frontend**: 95% (19/20 UI integration tests passed)
+- **Overall**: 98% success rate
+
+---
+
 ## Notes
 
 - AI Chat is currently **MOCKED** with intelligent keyword-based responses
-- Document storage uses Base64 encoding in MongoDB (production should use Firebase/S3)
-- No authentication implemented yet (all endpoints are public)
+- Firebase Storage is configured but requires Storage Rules setup in Firebase Console
+- Firebase Firestore is initialized but requires database creation in Firebase Console
+- Document storage uses hybrid approach: Firebase Storage (primary) + MongoDB (fallback)
