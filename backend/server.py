@@ -306,17 +306,21 @@ async def upload_document(
     file: UploadFile = File(...),
     deal_room_id: str = Form(...),
     folder: str = Form(default="Legal_Drafts"),
-    access_level: str = Form(default="Team")
+    access_level: str = Form(default="Team"),
+    storage_path: Optional[str] = Form(default=None),
+    download_url: Optional[str] = Form(default=None),
+    file_hash: Optional[str] = Form(default=None)
 ):
     """Upload a document to the vault with metadata indexing"""
     content = await file.read()
-    file_hash = compute_file_hash(content)
     
-    # Create storage path
-    storage_path = f"/deals/{deal_room_id}/{folder}/{file.filename}"
+    # Use provided hash or compute one
+    if not file_hash:
+        file_hash = compute_file_hash(content)
     
-    # Store file content in base64 (in production, use actual cloud storage)
-    file_content_b64 = base64.b64encode(content).decode('utf-8')
+    # Use provided storage path or create default
+    if not storage_path:
+        storage_path = f"/deals/{deal_room_id}/{folder}/{file.filename}"
     
     # Create document metadata
     doc_metadata = DocumentMetadata(
@@ -333,11 +337,16 @@ async def upload_document(
     
     doc = doc_metadata.model_dump()
     doc['uploaded_at'] = doc['uploaded_at'].isoformat()
-    doc['file_content'] = file_content_b64  # Store content (in production, use cloud storage URL)
+    
+    # If Firebase URL provided, store it; otherwise store base64 content
+    if download_url:
+        doc['download_url'] = download_url
+    else:
+        doc['file_content'] = base64.b64encode(content).decode('utf-8')
     
     await db.documents.insert_one(doc)
     
-    # Simulate indexing completion after upload
+    # Update indexing status to complete
     await db.documents.update_one(
         {"id": doc_metadata.id},
         {"$set": {
@@ -351,6 +360,7 @@ async def upload_document(
         "file_name": doc_metadata.file_name,
         "file_hash": doc_metadata.file_hash,
         "storage_path": storage_path,
+        "download_url": download_url,
         "indexing_status": "indexed"
     }
 
