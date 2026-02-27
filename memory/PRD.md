@@ -222,7 +222,8 @@ const firebaseConfig = {
 
 ## Notes
 
-- AI Chat is currently **MOCKED** with intelligent keyword-based responses
+- **AI Chat is NOW POWERED BY GEMINI 2.5 PRO** - Real legal analysis with citations
 - Firebase Storage is configured but requires Storage Rules setup in Firebase Console
 - Firebase Firestore is initialized but requires database creation in Firebase Console
 - Document storage uses hybrid approach: Firebase Storage (primary) + MongoDB (fallback)
+- Emergent LLM Key configured for AI integration (credits deducted from key balance)
