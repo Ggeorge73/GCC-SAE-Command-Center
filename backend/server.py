@@ -382,7 +382,28 @@ async def get_documents(deal_room_id: str, folder: Optional[str] = None):
         if doc.get('indexed_at') and isinstance(doc['indexed_at'], str):
             doc['indexed_at'] = datetime.fromisoformat(doc['indexed_at'])
     
-    return documents
+    # Serialize to JSON-compatible format
+    result = []
+    for doc in documents:
+        serialized = {
+            "id": doc.get("id"),
+            "deal_room_id": doc.get("deal_room_id"),
+            "file_name": doc.get("file_name"),
+            "file_size": doc.get("file_size"),
+            "file_type": doc.get("file_type"),
+            "folder": doc.get("folder"),
+            "file_hash": doc.get("file_hash"),
+            "access_level": doc.get("access_level"),
+            "storage_path": doc.get("storage_path"),
+            "download_url": doc.get("download_url"),
+            "indexing_status": doc.get("indexing_status"),
+            "version": doc.get("version"),
+            "uploaded_at": doc.get("uploaded_at").isoformat() if doc.get("uploaded_at") else None,
+            "indexed_at": doc.get("indexed_at").isoformat() if doc.get("indexed_at") else None,
+        }
+        result.append(serialized)
+    
+    return result
 
 @api_router.get("/documents/download/{document_id}")
 async def download_document(document_id: str):
