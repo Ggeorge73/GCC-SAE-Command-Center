@@ -6,7 +6,7 @@ import {
   FolderOpen, Clock, CheckCircle, AlertTriangle, XCircle,
   Search, Menu, LogOut, Settings, BarChart2, FileEdit,
   Trash2, Download, Lock, Unlock, RefreshCw, X, ExternalLink,
-  Briefcase, Globe, Building2
+  Briefcase, Globe, Building2, Cloud, Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,21 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Toaster, toast } from "sonner";
+
+// Firebase imports
+import {
+  createDealRoom as fbCreateDealRoom,
+  getDealRooms as fbGetDealRooms,
+  deleteDealRoom as fbDeleteDealRoom,
+  createDefaultChecklists,
+  getComplianceChecklists as fbGetComplianceChecklists,
+  updateComplianceStatus,
+  uploadDocument as fbUploadDocument,
+  getDocuments as fbGetDocuments,
+  deleteDocument as fbDeleteDocument,
+  getAuditTrail as fbGetAuditTrail,
+  createAdvisoryLog,
+} from "@/lib/firebase";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -98,8 +114,16 @@ const GCCLogo = () => (
   </div>
 );
 
+// Firebase Badge
+const FirebaseBadge = () => (
+  <div className="flex items-center gap-1 px-2 py-1 bg-orange-900/20 text-orange-400 border border-orange-800/30 rounded-sm">
+    <Cloud className="w-3 h-3" />
+    <span className="text-[10px] font-bold">FIREBASE</span>
+  </div>
+);
+
 // Sidebar Component
-const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRoom, complianceItems }) => {
+const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRoom, complianceItems, onUpdateCompliance }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newDealName, setNewDealName] = useState("");
   const [newJurisdiction, setNewJurisdiction] = useState("NIGERIA (CAMA 2020)");
@@ -109,6 +133,13 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
     await onCreateDealRoom(newDealName, newJurisdiction);
     setNewDealName("");
     setIsCreating(false);
+  };
+
+  const handleStatusClick = async (item) => {
+    const statusCycle = ['pending', 'compliant', 'overdue'];
+    const currentIndex = statusCycle.indexOf(item.status);
+    const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+    await onUpdateCompliance(item.id, nextStatus);
   };
 
   return (
@@ -124,6 +155,7 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
           <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground-muted)]">
             Active Matters
           </span>
+          <FirebaseBadge />
         </div>
 
         {/* New Matter Button */}
@@ -234,7 +266,7 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
             </span>
             <RefreshCw className="w-3 h-3 text-[var(--foreground-muted)]" />
           </div>
-          <ScrollArea className="h-[200px] -mx-2">
+          <ScrollArea className="h-[180px] -mx-2">
             <div className="px-2 space-y-2">
               {complianceItems.length === 0 ? (
                 <p className="text-xs text-[var(--foreground-muted)] text-center py-4">
@@ -244,20 +276,16 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
                 complianceItems.map((item) => (
                   <div
                     key={item.id}
-                    className={`compliance-item ${item.status} p-2 bg-[var(--background-secondary)] rounded-sm`}
+                    className={`compliance-item ${item.status} p-2 bg-[var(--background-secondary)] rounded-sm cursor-pointer hover:bg-[var(--background-tertiary)] transition-colors`}
+                    onClick={() => handleStatusClick(item)}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium truncate flex-1">{item.name}</span>
                       <StatusBadge status={item.status} />
                     </div>
-                    {item.regulatory_body && (
+                    {item.regulatoryBody && (
                       <p className="text-[10px] text-[var(--foreground-muted)]">
-                        {item.regulatory_body}
-                      </p>
-                    )}
-                    {item.due_date && (
-                      <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
-                        Due: {item.due_date}
+                        {item.regulatoryBody}
                       </p>
                     )}
                   </div>
@@ -266,9 +294,9 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
             </div>
           </ScrollArea>
           {complianceItems.length > 0 && (
-            <button className="w-full mt-2 text-[10px] text-[var(--primary)] hover:underline">
-              View Full Compliance Report
-            </button>
+            <p className="text-[10px] text-[var(--foreground-muted)] text-center mt-2">
+              Click status to cycle through states
+            </p>
           )}
         </div>
       </div>
@@ -439,6 +467,22 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
         timestamp: response.data.timestamp,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Log to Firebase if deal room selected
+      if (selectedDealRoom) {
+        try {
+          await createAdvisoryLog({
+            dealRoomId: selectedDealRoom.id,
+            type: 'legal_opinion',
+            content: response.data.response,
+            promptUsed: inputValue,
+            jurisdictionContext: jurisdiction,
+            referenceId: response.data.reference_id,
+          });
+        } catch (e) {
+          console.warn('Could not log to Firebase:', e);
+        }
+      }
     } catch (error) {
       console.error("Chat error:", error);
       toast.error("Failed to get response from the Advocate");
@@ -526,7 +570,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
 };
 
 // Document Vault Component
-const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefresh }) => {
+const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefresh, isUploading, uploadProgress }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("Legal_Drafts");
   const [searchQuery, setSearchQuery] = useState("");
@@ -559,7 +603,8 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
   };
 
   const filteredDocs = documents.filter((doc) => {
-    const matchesSearch = doc.file_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = doc.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          doc.file_name?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -568,7 +613,10 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
       {/* Header */}
       <div className="p-4 border-b border-[var(--navy-light)]">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-serif text-lg text-[var(--primary)]">THE VAULT</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-serif text-lg text-[var(--primary)]">THE VAULT</h3>
+            <FirebaseBadge />
+          </div>
           <button
             onClick={onRefresh}
             className="p-1 hover:bg-[var(--background-secondary)] rounded-sm transition-colors"
@@ -577,24 +625,47 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
           </button>
         </div>
 
+        {/* Folder selector */}
+        <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+          <SelectTrigger className="input-advisory h-8 text-xs mb-3">
+            <FolderOpen className="w-3 h-3 mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FOLDERS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* Drop zone */}
         <div
           data-testid="document-drop-zone"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !isUploading && fileInputRef.current?.click()}
           className={`drop-zone p-4 rounded-sm text-center cursor-pointer transition-all ${
             isDragging ? "active" : ""
-          }`}
+          } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
         >
-          <Upload className="w-6 h-6 mx-auto mb-2 text-[var(--foreground-muted)]" />
-          <p className="text-xs text-[var(--foreground-muted)]">
-            Drag & Drop Legal Briefs
-          </p>
-          <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
-            PDF, DOCX, CSV (Max 65MB)
-          </p>
+          {isUploading ? (
+            <div className="space-y-2">
+              <Cloud className="w-6 h-6 mx-auto text-[var(--primary)] animate-pulse" />
+              <p className="text-xs text-[var(--foreground-muted)]">Uploading to Firebase...</p>
+              <Progress value={uploadProgress} className="h-1" />
+            </div>
+          ) : (
+            <>
+              <Upload className="w-6 h-6 mx-auto mb-2 text-[var(--foreground-muted)]" />
+              <p className="text-xs text-[var(--foreground-muted)]">
+                Drag & Drop Legal Briefs
+              </p>
+              <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
+                PDF, DOCX, CSV (Max 65MB)
+              </p>
+            </>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -602,6 +673,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
             onChange={handleFileSelect}
             className="hidden"
             accept=".pdf,.docx,.doc,.csv,.xlsx,.txt"
+            disabled={isUploading}
           />
         </div>
 
@@ -641,14 +713,25 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium truncate">{doc.file_name}</span>
-                      <StatusBadge status={doc.indexing_status} />
+                      <span className="text-sm font-medium truncate">{doc.fileName || doc.file_name}</span>
+                      <StatusBadge status={doc.indexingStatus || doc.indexing_status || 'indexed'} />
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-[var(--foreground-muted)]">
-                      <span>v{doc.version}</span>
-                      <span>{formatDate(doc.uploaded_at)}</span>
-                      <span>{formatFileSize(doc.file_size)}</span>
+                      <span>v{doc.version || '1.0'}</span>
+                      <span>{formatDate(doc.uploadedAt || doc.uploaded_at)}</span>
+                      <span>{formatFileSize(doc.fileSize || doc.file_size)}</span>
                     </div>
+                    {doc.downloadURL && (
+                      <a 
+                        href={doc.downloadURL} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-[var(--primary)] hover:underline flex items-center gap-1 mt-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View in Firebase
+                      </a>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -679,30 +762,33 @@ const AuditTrail = ({ selectedDealRoom, auditData }) => {
   }
 
   const allEvents = [
-    ...(auditData.advisory_logs || []).map((log) => ({
+    ...(auditData.advisoryLogs || auditData.advisory_logs || []).map((log) => ({
       type: "advisory",
       title: log.type === "legal_opinion" ? "Legal Opinion" : "Strategic Directive",
-      content: log.content.substring(0, 100) + "...",
+      content: (log.content || '').substring(0, 100) + "...",
       timestamp: log.timestamp,
     })),
-    ...(auditData.document_uploads || []).map((doc) => ({
+    ...(auditData.documentUploads || auditData.document_uploads || []).map((doc) => ({
       type: "document",
-      title: `Document Uploaded: ${doc.file_name}`,
-      content: `Folder: ${doc.folder} | Hash: ${doc.file_hash.substring(0, 8)}...`,
-      timestamp: doc.uploaded_at,
+      title: `Document Uploaded: ${doc.fileName || doc.file_name}`,
+      content: `Folder: ${doc.folder} | Hash: ${(doc.fileHash || doc.file_hash || '').substring(0, 8)}...`,
+      timestamp: doc.uploadedAt || doc.uploaded_at,
     })),
-    ...(auditData.compliance_updates || []).map((cl) => ({
+    ...(auditData.complianceUpdates || auditData.compliance_updates || []).map((cl) => ({
       type: "compliance",
       title: `Compliance: ${cl.name}`,
-      content: `Status: ${cl.status.toUpperCase()}`,
-      timestamp: cl.updated_at,
+      content: `Status: ${(cl.status || 'pending').toUpperCase()}`,
+      timestamp: cl.updatedAt || cl.updated_at || cl.createdAt || cl.created_at,
     })),
   ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-[var(--navy-light)]">
-        <h3 className="font-serif text-lg text-[var(--primary)]">AUDIT TRAIL</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-serif text-lg text-[var(--primary)]">AUDIT TRAIL</h3>
+          <FirebaseBadge />
+        </div>
         <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
           Complete transaction history
         </p>
@@ -728,7 +814,7 @@ const AuditTrail = ({ selectedDealRoom, auditData }) => {
                 </div>
                 <p className="text-[10px] text-[var(--foreground-muted)] mb-1">{event.content}</p>
                 <span className="text-[10px] text-[var(--foreground-muted)]">
-                  {new Date(event.timestamp).toLocaleString()}
+                  {event.timestamp ? new Date(event.timestamp).toLocaleString() : 'N/A'}
                 </span>
               </div>
             ))}
@@ -745,50 +831,53 @@ function App() {
   const [selectedDealRoom, setSelectedDealRoom] = useState(null);
   const [complianceItems, setComplianceItems] = useState([]);
   const [documents, setDocuments] = useState([]);
-  const [auditData, setAuditData] = useState({ advisory_logs: [], document_uploads: [], compliance_updates: [] });
+  const [auditData, setAuditData] = useState({ advisoryLogs: [], documentUploads: [], complianceUpdates: [] });
   const [activeTab, setActiveTab] = useState("vault");
   const [jurisdiction, setJurisdiction] = useState("NIGERIA (CAMA 2020)");
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Fetch deal rooms
+  // Fetch deal rooms from Firebase
   const fetchDealRooms = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/deal-rooms`);
-      setDealRooms(response.data);
+      const rooms = await fbGetDealRooms();
+      setDealRooms(rooms);
     } catch (error) {
-      console.error("Error fetching deal rooms:", error);
+      console.error("Error fetching deal rooms from Firebase:", error);
+      toast.error("Failed to fetch deal rooms");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Fetch compliance items
+  // Fetch compliance items from Firebase
   const fetchCompliance = useCallback(async (dealRoomId) => {
     try {
-      const response = await axios.get(`${API}/compliance-checklists/${dealRoomId}`);
-      setComplianceItems(response.data);
+      const checklists = await fbGetComplianceChecklists(dealRoomId);
+      setComplianceItems(checklists);
     } catch (error) {
-      console.error("Error fetching compliance:", error);
+      console.error("Error fetching compliance from Firebase:", error);
     }
   }, []);
 
-  // Fetch documents
+  // Fetch documents from Firebase
   const fetchDocuments = useCallback(async (dealRoomId) => {
     try {
-      const response = await axios.get(`${API}/documents/${dealRoomId}`);
-      setDocuments(response.data);
+      const docs = await fbGetDocuments(dealRoomId);
+      setDocuments(docs);
     } catch (error) {
-      console.error("Error fetching documents:", error);
+      console.error("Error fetching documents from Firebase:", error);
     }
   }, []);
 
-  // Fetch audit trail
+  // Fetch audit trail from Firebase
   const fetchAuditTrail = useCallback(async (dealRoomId) => {
     try {
-      const response = await axios.get(`${API}/audit-trail/${dealRoomId}`);
-      setAuditData(response.data);
+      const audit = await fbGetAuditTrail(dealRoomId);
+      setAuditData(audit);
     } catch (error) {
-      console.error("Error fetching audit trail:", error);
+      console.error("Error fetching audit trail from Firebase:", error);
     }
   }, []);
 
@@ -807,55 +896,85 @@ function App() {
     } else {
       setComplianceItems([]);
       setDocuments([]);
-      setAuditData({ advisory_logs: [], document_uploads: [], compliance_updates: [] });
+      setAuditData({ advisoryLogs: [], documentUploads: [], complianceUpdates: [] });
     }
   }, [selectedDealRoom, fetchCompliance, fetchDocuments, fetchAuditTrail]);
 
-  // Create deal room
+  // Create deal room in Firebase
   const handleCreateDealRoom = async (name, jurisdiction) => {
     try {
-      const response = await axios.post(`${API}/deal-rooms`, { name, jurisdiction });
-      setDealRooms((prev) => [...prev, response.data]);
-      setSelectedDealRoom(response.data);
-      toast.success("Deal room created");
+      const newRoom = await fbCreateDealRoom({
+        name,
+        jurisdiction,
+        status: 'active',
+      });
+      
+      // Create default compliance checklists
+      await createDefaultChecklists(newRoom.id, jurisdiction);
+      
+      // Refresh and select
+      await fetchDealRooms();
+      setSelectedDealRoom(newRoom);
+      toast.success("Deal room created in Firebase");
     } catch (error) {
       console.error("Error creating deal room:", error);
       toast.error("Failed to create deal room");
     }
   };
 
-  // Upload document
+  // Update compliance status in Firebase
+  const handleUpdateCompliance = async (checklistId, status) => {
+    try {
+      await updateComplianceStatus(checklistId, status);
+      if (selectedDealRoom) {
+        await fetchCompliance(selectedDealRoom.id);
+        await fetchAuditTrail(selectedDealRoom.id);
+      }
+      toast.success(`Status updated to ${status}`);
+    } catch (error) {
+      console.error("Error updating compliance:", error);
+      toast.error("Failed to update status");
+    }
+  };
+
+  // Upload document to Firebase Storage
   const handleUploadDocument = async (file, folder) => {
     if (!selectedDealRoom) {
       toast.error("Please select a deal room first");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("deal_room_id", selectedDealRoom.id);
-    formData.append("folder", folder);
+    setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      await axios.post(`${API}/documents/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      toast.success(`${file.name} uploaded and indexed`);
-      fetchDocuments(selectedDealRoom.id);
-      fetchAuditTrail(selectedDealRoom.id);
+      await fbUploadDocument(
+        file,
+        selectedDealRoom.id,
+        folder,
+        'Team',
+        (progress) => setUploadProgress(progress)
+      );
+      toast.success(`${file.name} uploaded to Firebase Storage`);
+      await fetchDocuments(selectedDealRoom.id);
+      await fetchAuditTrail(selectedDealRoom.id);
     } catch (error) {
       console.error("Error uploading document:", error);
       toast.error("Failed to upload document");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  // Delete document
+  // Delete document from Firebase
   const handleDeleteDocument = async (documentId) => {
     try {
-      await axios.delete(`${API}/documents/${documentId}`);
-      toast.success("Document deleted");
+      await fbDeleteDocument(documentId);
+      toast.success("Document deleted from Firebase");
       if (selectedDealRoom) {
-        fetchDocuments(selectedDealRoom.id);
+        await fetchDocuments(selectedDealRoom.id);
+        await fetchAuditTrail(selectedDealRoom.id);
       }
     } catch (error) {
       console.error("Error deleting document:", error);
@@ -874,6 +993,7 @@ function App() {
         onSelectDealRoom={setSelectedDealRoom}
         onCreateDealRoom={handleCreateDealRoom}
         complianceItems={complianceItems}
+        onUpdateCompliance={handleUpdateCompliance}
       />
 
       {/* Main content */}
@@ -905,6 +1025,8 @@ function App() {
                 onUpload={handleUploadDocument}
                 onDelete={handleDeleteDocument}
                 onRefresh={() => selectedDealRoom && fetchDocuments(selectedDealRoom.id)}
+                isUploading={isUploading}
+                uploadProgress={uploadProgress}
               />
             ) : (
               <AuditTrail
