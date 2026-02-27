@@ -1,0 +1,169 @@
+{
+  "design_system": {
+    "brand_identity": {
+      "name": "GCC-SAE",
+      "full_name": "Global Corporate Counsel - Senior Advocate Engine",
+      "ethos": "Elite, Authoritative, Secure, Precision",
+      "archetype": "The Old Money Tech",
+      "theme_mode": "dark"
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Playfair Display, serif",
+        "body": "Manrope, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+        "h2": "text-3xl font-semibold tracking-tight",
+        "h3": "text-2xl font-medium",
+        "body_lg": "text-lg leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground",
+        "label": "text-xs font-bold uppercase tracking-widest text-primary/80"
+      },
+      "installation": {
+        "google_fonts": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+      }
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#c9a227",
+          "foreground": "#0a1628",
+          "hover": "#d4b036",
+          "active": "#b89320"
+        },
+        "background": {
+          "DEFAULT": "#0a1628",
+          "secondary": "#0f1f38",
+          "tertiary": "#152a4a"
+        },
+        "foreground": {
+          "DEFAULT": "#e2e8f0",
+          "muted": "#94a3b8"
+        },
+        "accent": {
+          "gold": "#c9a227",
+          "gold_dim": "rgba(201, 162, 39, 0.15)",
+          "navy_light": "#1e3a66"
+        },
+        "status": {
+          "success": "#10b981",
+          "warning": "#f59e0b",
+          "error": "#ef4444",
+          "info": "#3b82f6"
+        },
+        "border": {
+          "DEFAULT": "rgba(201, 162, 39, 0.2)",
+          "strong": "rgba(201, 162, 39, 0.4)"
+        }
+      },
+      "gradients": {
+        "gold_glow": "radial-gradient(circle at center, rgba(201, 162, 39, 0.15) 0%, transparent 70%)",
+        "navy_depth": "linear-gradient(180deg, rgba(10, 22, 40, 0) 0%, rgba(10, 22, 40, 0.8) 100%)"
+      }
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8 lg:p-12",
+      "section_gap": "gap-8",
+      "component_gap": "gap-4"
+    },
+    "visual_enhancers": {
+      "radius": {
+        "default": "rounded-sm",
+        "card": "rounded-md",
+        "button": "rounded-none"
+      },
+      "shadows": {
+        "card": "0 4px 20px -2px rgba(0, 0, 0, 0.5)",
+        "glow": "0 0 15px rgba(201, 162, 39, 0.15)"
+      },
+      "borders": {
+        "style": "border border-border",
+        "active": "border-primary/50 ring-1 ring-primary/20"
+      },
+      "glassmorphism": {
+        "header": "bg-[#0a1628]/80 backdrop-blur-md border-b border-white/5",
+        "panel": "bg-[#0f1f38]/60 backdrop-blur-xl border border-white/5"
+      }
+    },
+    "layout_structure": {
+      "dashboard_grid": {
+        "wrapper": "grid h-screen w-full pl-[56px] md:pl-[240px]",
+        "sidebar": "fixed left-0 top-0 h-full w-[240px] border-r border-[#1e3a66] bg-[#0a1628] hidden md:flex flex-col z-30",
+        "main_area": "flex flex-col flex-1 h-full overflow-hidden bg-[#0a1628]",
+        "three_pane": "grid grid-cols-1 lg:grid-cols-12 h-full",
+        "chat_pane": "lg:col-span-8 flex flex-col h-full relative",
+        "vault_pane": "lg:col-span-4 border-l border-[#1e3a66] bg-[#0f1f38]/50 h-full overflow-y-auto hidden lg:block"
+      }
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm font-serif font-medium px-6 py-2 transition-all duration-300",
+      "secondary": "bg-transparent border border-primary/30 text-primary hover:bg-primary/10 rounded-sm px-6 py-2 font-serif",
+      "ghost": "hover:bg-accent hover:text-white text-muted-foreground transition-colors"
+    },
+    "cards": {
+      "base": "bg-[#0f1f38] border border-[#1e3a66] rounded-sm p-6 shadow-xl relative overflow-hidden group",
+      "deal_room": "hover:border-primary/40 transition-all duration-300 bg-gradient-to-br from-[#0f1f38] to-[#0a1628]"
+    },
+    "inputs": {
+      "base": "bg-[#0a1628] border-primary/20 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50 rounded-sm h-12 font-sans"
+    },
+    "badges": {
+      "compliance_success": "bg-green-900/30 text-green-400 border border-green-800/50 px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold",
+      "compliance_warning": "bg-yellow-900/30 text-yellow-400 border border-yellow-800/50 px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold",
+      "compliance_error": "bg-red-900/30 text-red-400 border border-red-800/50 px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold"
+    }
+  },
+  "assets": {
+    "images": {
+      "login_bg": {
+        "url": "https://images.unsplash.com/photo-1765729003080-29ce51da4816?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwzfHxjb3Jwb3JhdGUlMjBza3lzY3JhcGVyJTIwbmlnaHR8ZW58MHx8fHwxNzcyMjEyMTE2fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Corporate Skyscraper Night",
+        "usage": "Login page background / Hero section"
+      },
+      "deal_room_thumbs": [
+        {
+          "url": "https://images.unsplash.com/photo-1766802981801-4b4a9a1d8f1c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBvZmZpY2UlMjBtZWV0aW5nJTIwcm9vbSUyMGdsYXNzfGVufDB8fHx8MTc3MjIxMjExOHww&ixlib=rb-4.1.0&q=85",
+          "alt": "Executive Meeting Room"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1762230825060-9e3b38e389f5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwxfHxjb3Jwb3JhdGUlMjBza3lzY3JhcGVyJTIwbmlnaHR8ZW58MHx8fHwxNzcyMjEyMTE2fDA&ixlib=rb-4.1.0&q=85",
+          "alt": "City Skyline Deal"
+        },
+        {
+          "url": "https://images.pexels.com/photos/260689/pexels-photo-260689.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+          "alt": "Glass Conference Room"
+        }
+      ],
+      "user_avatars": [
+        {
+          "url": "https://images.unsplash.com/photo-1740153204804-200310378f2f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHw0fHxzZW5pb3IlMjBjb3Jwb3JhdGUlMjBsYXd5ZXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzIyMTIxMTh8MA&ixlib=rb-4.1.0&q=85",
+          "alt": "Senior Partner"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1736939678218-bd648b5ef3bb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwxfHxzZW5pb3IlMjBjb3Jwb3JhdGUlMjBsYXd5ZXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzIyMTIxMTh8MA&ixlib=rb-4.1.0&q=85",
+          "alt": "Associate Counsel"
+        }
+      ],
+      "placeholders": {
+        "document": "https://images.unsplash.com/photo-1509593080960-6b9e566b3443?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxsZWdhbCUyMGRvY3VtZW50cyUyMHBlbiUyMGRlc2t8ZW58MHx8fHwxNzcyMjEyMTE3fDA&ixlib=rb-4.1.0&q=85"
+      }
+    }
+  },
+  "universal_guidelines": [
+    "Use 'Playfair Display' for all Section Headings and 'Manrope' for body text.",
+    "The UI must be strictly DARK MODE. No white backgrounds. Use #0a1628 for main bg.",
+    "Use Gold (#c9a227) sparingly for high-value actions (buttons, active states).",
+    "Borders should be very subtle (opacity 0.2) or glowy for active states.",
+    "Do not use rounded corners larger than 'rounded-md'. Keep it professional and sharp.",
+    "Always add 'data-testid' to interactive elements.",
+    "Use 'sonner' for toast notifications.",
+    "For the Document Vault, use a grid layout with card previews.",
+    "Chat interface should feel like a high-end encrypted messaging app (e.g., Signal meets Bloomberg Terminal).",
+    "Sidebar must look like a legal case file list - structured and dense."
+  ]
+}
