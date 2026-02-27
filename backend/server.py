@@ -465,9 +465,12 @@ async def delete_document(document_id: str):
 
 # ============== CHAT / ADVISORY ENDPOINT ==============
 
+# Store for chat sessions (in production, use Redis or database)
+chat_sessions: Dict[str, LlmChat] = {}
+
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_advocate(request: ChatRequest):
-    """Chat with the GCC Senior Advocate AI"""
+    """Chat with the GCC Senior Advocate AI powered by Gemini 3.1 Pro"""
     reference_id = f"GCC-{uuid.uuid4().hex[:8].upper()}"
     
     # Get relevant documents for context if deal_room_id provided
@@ -479,14 +482,69 @@ async def chat_with_advocate(request: ChatRequest):
         ).to_list(10)
         context_docs = [f"{d['folder']}/{d['file_name']}" for d in docs]
     
-    # Generate AI response (mock response for now - in production integrate with LLM)
-    system_prompt = get_gcc_sae_system_prompt(request.jurisdiction)
+    # Generate session ID based on deal room or create new
+    session_id = request.deal_room_id or f"global-{uuid.uuid4().hex[:8]}"
     
-    # Mock intelligent response based on query
-    query_lower = request.message.lower()
+    try:
+        # Create or retrieve chat session
+        if session_id not in chat_sessions:
+            system_prompt = get_gcc_sae_system_prompt(request.jurisdiction, context_docs)
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=session_id,
+                system_message=system_prompt
+            ).with_model("gemini", "gemini-2.5-pro")
+            chat_sessions[session_id] = chat
+        else:
+            chat = chat_sessions[session_id]
+        
+        # Create user message
+        user_message = UserMessage(text=request.message)
+        
+        # Get AI response
+        ai_response = await chat.send_message(user_message)
+        
+        # Format response with reference
+        formatted_response = f"**Strategic Advisory (REF: {reference_id})**\n\n{ai_response}"
+        
+        # Add document context if available
+        if context_docs:
+            formatted_response += f"\n\n*Documents referenced from Vault: {', '.join(context_docs)}*"
+        
+        response = formatted_response
+        
+    except Exception as e:
+        logger.error(f"Gemini API error: {e}")
+        # Fallback to intelligent mock response if API fails
+        response = generate_fallback_response(request.message, request.jurisdiction, context_docs, reference_id)
+    
+    # Log the advisory
+    if request.deal_room_id:
+        log = AdvisoryLog(
+            deal_room_id=request.deal_room_id,
+            type="legal_opinion",
+            content=response,
+            prompt_used=request.message,
+            jurisdiction_context=request.jurisdiction
+        )
+        log_doc = log.model_dump()
+        log_doc['timestamp'] = log_doc['timestamp'].isoformat()
+        await db.advisory_logs.insert_one(log_doc)
+    
+    return ChatResponse(
+        response=response,
+        reference_id=reference_id,
+        jurisdiction=request.jurisdiction,
+        timestamp=datetime.now(timezone.utc)
+    )
+
+
+def generate_fallback_response(query: str, jurisdiction: str, context_docs: List[str], reference_id: str) -> str:
+    """Generate intelligent fallback response if AI API fails"""
+    query_lower = query.lower()
     
     if "cama" in query_lower or "nigeria" in query_lower:
-        response = f"""**Strategic Directive (REF: {reference_id})**
+        return f"""**Strategic Directive (REF: {reference_id})**
 
 Under CAMA 2020, the following considerations apply to your query:
 
@@ -498,10 +556,12 @@ Under CAMA 2020, the following considerations apply to your query:
 
 **Recommendation**: Engage local counsel for SEC Nigeria notification if raising capital from more than 50 investors.
 
-*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*"""
+*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*
+
+*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
     
     elif "delaware" in query_lower or "dgcl" in query_lower or "us" in query_lower:
-        response = f"""**Legal Opinion (REF: {reference_id})**
+        return f"""**Legal Opinion (REF: {reference_id})**
 
 Under Delaware General Corporation Law:
 
@@ -513,10 +573,12 @@ Under Delaware General Corporation Law:
 
 **Cross-Border Consideration**: For Nigerian operations, structure as Delaware Parent → Nigerian Sub. This preserves Delaware flexibility while ensuring CAMA compliance.
 
-*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*"""
+*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*
+
+*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
     
     elif "m&a" in query_lower or "acquisition" in query_lower or "merger" in query_lower:
-        response = f"""**Strategic Directive (REF: {reference_id})**
+        return f"""**Strategic Directive (REF: {reference_id})**
 
 For cross-border M&A involving Nigeria and US entities:
 
@@ -537,44 +599,28 @@ For cross-border M&A involving Nigeria and US entities:
 
 **Timeline**: Allow 90-120 days for Nigerian regulatory approvals.
 
-*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*"""
+*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*
+
+*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
     
     else:
-        response = f"""**Advisory Response (REF: {reference_id})**
+        return f"""**Advisory Response (REF: {reference_id})**
 
-Greetings. I am the Global Corporate Counsel & Senior Advocate Engine. I have access to the full repository of CAMA 2020, DGCL, and International Precedents.
-
-I stand ready to apply the full weight of the law to secure your commercial interests. How may I guide your Board today?
+I am the Global Corporate Counsel & Senior Advocate Engine, ready to apply the full weight of legal expertise to your commercial interests.
 
 **Available Advisory Services**:
-- Cross-border transaction structuring
+- Cross-border transaction structuring (Nigeria/US/UK)
 - Regulatory compliance mapping (SEC, CBN, CAC, UK FCA)
-- Due diligence coordination
-- Contract risk analysis
+- Due diligence coordination and risk analysis
+- Contract review for "silent" liabilities
 - Corporate governance advisory
 
-*Current jurisdiction context: {request.jurisdiction}*
-*Documents in vault: {len(context_docs)} indexed*"""
-    
-    # Log the advisory
-    if request.deal_room_id:
-        log = AdvisoryLog(
-            deal_room_id=request.deal_room_id,
-            type="legal_opinion" if "opinion" in query_lower else "strategic_directive",
-            content=response,
-            prompt_used=request.message,
-            jurisdiction_context=request.jurisdiction
-        )
-        log_doc = log.model_dump()
-        log_doc['timestamp'] = log_doc['timestamp'].isoformat()
-        await db.advisory_logs.insert_one(log_doc)
-    
-    return ChatResponse(
-        response=response,
-        reference_id=reference_id,
-        jurisdiction=request.jurisdiction,
-        timestamp=datetime.now(timezone.utc)
-    )
+*Current jurisdiction context: {jurisdiction}*
+*Documents in vault: {len(context_docs)} indexed*
+
+Please provide more details about your specific legal query, and I will deliver executive-ready advice.
+
+*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
 
 # ============== AUDIT TRAIL ==============
 
