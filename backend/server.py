@@ -14,13 +14,20 @@ import hashlib
 import json
 import base64
 
+# Load environment variables FIRST
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Import LLM integration
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# LLM Configuration
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 # Create the main app
 app = FastAPI(title="GCC-SAE API", description="Global Corporate Counsel - Senior Advocate Engine")
