@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +7,12 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
-
+import hashlib
+import json
+import base64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,52 +22,545 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+# Create the main app
+app = FastAPI(title="GCC-SAE API", description="Global Corporate Counsel - Senior Advocate Engine")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Security
+security = HTTPBearer(auto_error=False)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# ============== MODELS ==============
+
+class DealRoom(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
+    name: str
+    jurisdiction: str = "NIGERIA (CAMA 2020)"
+    total_raise: Optional[str] = None
+    primary_counsel: Optional[str] = None
+    status: str = "active"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DealRoomCreate(BaseModel):
+    name: str
+    jurisdiction: str = "NIGERIA (CAMA 2020)"
+    total_raise: Optional[str] = None
+    primary_counsel: Optional[str] = None
+
+class AdvisoryLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    deal_room_id: str
+    type: str  # "strategic_directive" | "legal_opinion" | "user_query"
+    content: str
+    prompt_used: Optional[str] = None
+    jurisdiction_context: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    metadata: Optional[Dict[str, Any]] = None
+
+class AdvisoryLogCreate(BaseModel):
+    deal_room_id: str
+    type: str
+    content: str
+    prompt_used: Optional[str] = None
+    jurisdiction_context: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class ComplianceChecklist(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    deal_room_id: str
+    name: str
+    description: Optional[str] = None
+    status: str = "pending"  # "compliant" | "pending" | "overdue"
+    due_date: Optional[str] = None
+    regulatory_body: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ComplianceChecklistCreate(BaseModel):
+    deal_room_id: str
+    name: str
+    description: Optional[str] = None
+    status: str = "pending"
+    due_date: Optional[str] = None
+    regulatory_body: Optional[str] = None
+
+class DocumentMetadata(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    deal_room_id: str
+    file_name: str
+    file_size: int
+    file_type: str
+    folder: str  # "Legal_Drafts" | "Due_Diligence" | "CBRNE_Technical" | "KYC_Docs"
+    file_hash: str
+    access_level: str = "Team"  # "Admin Only" | "Team" | "Public"
+    storage_path: str
+    indexing_status: str = "processing"  # "processing" | "indexed" | "failed"
+    version: str = "1.0"
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    indexed_at: Optional[datetime] = None
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class ChatRequest(BaseModel):
+    deal_room_id: Optional[str] = None
+    message: str
+    jurisdiction: str = "NIGERIA (CAMA 2020)"
 
-# Add your routes to the router instead of directly to app
+class ChatResponse(BaseModel):
+    response: str
+    reference_id: str
+    jurisdiction: str
+    timestamp: datetime
+
+# ============== HELPER FUNCTIONS ==============
+
+def compute_file_hash(content: bytes) -> str:
+    """Compute SHA-256 hash for file integrity verification"""
+    return hashlib.sha256(content).hexdigest()
+
+def get_gcc_sae_system_prompt(jurisdiction: str) -> str:
+    """Generate the GCC-SAE system prompt based on jurisdiction"""
+    return f"""You are the GCC Senior Advocate, a premier Legal and Strategic Consultant. Your cognitive architecture is modeled after a practitioner with 30+ years of robust experience in cross-border corporate-commercial transactions.
+
+Your expertise exceeds the combined legal acumen of a British King's Counsel (KC), a Senior Advocate of Nigeria (SAN), and a Senior Partner at top-tier firms (Latham & Watkins, Kirkland & Ellis, Skadden Arps).
+
+Core Skillset & Knowledge Base:
+- Jurisdictional Mastery: Expert-level fluency in US Federal/State law, English Common Law, and Nigerian Corporate Law (CAMA 2020).
+- Transaction Specialization: Master of M&A, Private Equity, Project Finance, and Carbon Credit Trading structures.
+- Risk Arbitrage: Ability to identify "silent" liabilities in complex cross-border contracts.
+- Strategic Communication: Speak with gravitas, precision, and economy of a Senior Partner.
+
+Current Jurisdiction Context: {jurisdiction}
+
+Operational Directives:
+1. Precision Over Prolixity: Never use three words where one will do.
+2. Contextual Grounding: Always verify data against available documents before offering advice.
+3. Proactive Compliance: Automatically flag potential regulatory hurdles (SEC, CBN, UK FCA) based on transaction geography.
+
+You have access to:
+- CAMA 2020 (Companies and Allied Matters Act)
+- DGCL (Delaware General Corporation Law)
+- International Precedents from UK, US, and Nigerian courts
+
+Respond with executive-ready advice, not just legal summaries."""
+
+# ============== DEAL ROOMS ENDPOINTS ==============
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "GCC-SAE API - Global Corporate Counsel Senior Advocate Engine", "version": "1.0.0"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+@api_router.post("/deal-rooms", response_model=DealRoom)
+async def create_deal_room(deal_room: DealRoomCreate):
+    """Create a new deal room"""
+    deal_obj = DealRoom(**deal_room.model_dump())
+    doc = deal_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.deal_rooms.insert_one(doc)
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
+    # Create default compliance checklists based on jurisdiction
+    default_checklists = []
+    if "NIGERIA" in deal_obj.jurisdiction:
+        default_checklists = [
+            {"name": "CAMA 2020 Annual Returns", "regulatory_body": "CAC", "status": "pending"},
+            {"name": "NOTAP Certificate Status", "regulatory_body": "NOTAP", "status": "pending"},
+            {"name": "SEC Nigeria Private Placement", "regulatory_body": "SEC Nigeria", "status": "pending"},
+        ]
+    elif "DELAWARE" in deal_obj.jurisdiction or "US" in deal_obj.jurisdiction:
+        default_checklists = [
+            {"name": "SEC Form D Filing", "regulatory_body": "SEC", "status": "pending"},
+            {"name": "Delaware Franchise Tax", "regulatory_body": "Delaware DOS", "status": "pending"},
+            {"name": "Blue Sky Compliance", "regulatory_body": "State Securities", "status": "pending"},
+        ]
+    
+    for checklist in default_checklists:
+        cl = ComplianceChecklist(
+            deal_room_id=deal_obj.id,
+            name=checklist["name"],
+            regulatory_body=checklist["regulatory_body"],
+            status=checklist["status"]
+        )
+        cl_doc = cl.model_dump()
+        cl_doc['created_at'] = cl_doc['created_at'].isoformat()
+        cl_doc['updated_at'] = cl_doc['updated_at'].isoformat()
+        await db.compliance_checklists.insert_one(cl_doc)
+    
+    return deal_obj
+
+@api_router.get("/deal-rooms", response_model=List[DealRoom])
+async def get_deal_rooms():
+    """Get all deal rooms"""
+    deal_rooms = await db.deal_rooms.find({}, {"_id": 0}).to_list(100)
+    for dr in deal_rooms:
+        if isinstance(dr.get('created_at'), str):
+            dr['created_at'] = datetime.fromisoformat(dr['created_at'])
+        if isinstance(dr.get('updated_at'), str):
+            dr['updated_at'] = datetime.fromisoformat(dr['updated_at'])
+    return deal_rooms
+
+@api_router.get("/deal-rooms/{deal_room_id}", response_model=DealRoom)
+async def get_deal_room(deal_room_id: str):
+    """Get a specific deal room"""
+    deal_room = await db.deal_rooms.find_one({"id": deal_room_id}, {"_id": 0})
+    if not deal_room:
+        raise HTTPException(status_code=404, detail="Deal room not found")
+    if isinstance(deal_room.get('created_at'), str):
+        deal_room['created_at'] = datetime.fromisoformat(deal_room['created_at'])
+    if isinstance(deal_room.get('updated_at'), str):
+        deal_room['updated_at'] = datetime.fromisoformat(deal_room['updated_at'])
+    return deal_room
+
+@api_router.delete("/deal-rooms/{deal_room_id}")
+async def delete_deal_room(deal_room_id: str):
+    """Delete a deal room and all related data"""
+    result = await db.deal_rooms.delete_one({"id": deal_room_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Deal room not found")
+    # Cascade delete related data
+    await db.advisory_logs.delete_many({"deal_room_id": deal_room_id})
+    await db.compliance_checklists.delete_many({"deal_room_id": deal_room_id})
+    await db.documents.delete_many({"deal_room_id": deal_room_id})
+    return {"message": "Deal room and all related data deleted"}
+
+# ============== ADVISORY LOGS ENDPOINTS ==============
+
+@api_router.post("/advisory-logs", response_model=AdvisoryLog)
+async def create_advisory_log(log: AdvisoryLogCreate):
+    """Create a new advisory log entry"""
+    log_obj = AdvisoryLog(**log.model_dump())
+    doc = log_obj.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    await db.advisory_logs.insert_one(doc)
+    return log_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.get("/advisory-logs/{deal_room_id}", response_model=List[AdvisoryLog])
+async def get_advisory_logs(deal_room_id: str):
+    """Get all advisory logs for a deal room"""
+    logs = await db.advisory_logs.find(
+        {"deal_room_id": deal_room_id}, 
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(100)
+    for log in logs:
+        if isinstance(log.get('timestamp'), str):
+            log['timestamp'] = datetime.fromisoformat(log['timestamp'])
+    return logs
+
+# ============== COMPLIANCE CHECKLISTS ENDPOINTS ==============
+
+@api_router.post("/compliance-checklists", response_model=ComplianceChecklist)
+async def create_compliance_checklist(checklist: ComplianceChecklistCreate):
+    """Create a new compliance checklist item"""
+    cl_obj = ComplianceChecklist(**checklist.model_dump())
+    doc = cl_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.compliance_checklists.insert_one(doc)
+    return cl_obj
+
+@api_router.get("/compliance-checklists/{deal_room_id}", response_model=List[ComplianceChecklist])
+async def get_compliance_checklists(deal_room_id: str):
+    """Get all compliance checklists for a deal room"""
+    checklists = await db.compliance_checklists.find(
+        {"deal_room_id": deal_room_id}, 
+        {"_id": 0}
+    ).to_list(50)
+    for cl in checklists:
+        if isinstance(cl.get('created_at'), str):
+            cl['created_at'] = datetime.fromisoformat(cl['created_at'])
+        if isinstance(cl.get('updated_at'), str):
+            cl['updated_at'] = datetime.fromisoformat(cl['updated_at'])
+    return checklists
+
+@api_router.put("/compliance-checklists/{checklist_id}")
+async def update_compliance_checklist(checklist_id: str, status: str = Form(...)):
+    """Update compliance checklist status"""
+    result = await db.compliance_checklists.update_one(
+        {"id": checklist_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Checklist not found")
+    return {"message": "Checklist updated", "status": status}
+
+# ============== DOCUMENT VAULT ENDPOINTS ==============
+
+@api_router.post("/documents/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    deal_room_id: str = Form(...),
+    folder: str = Form(default="Legal_Drafts"),
+    access_level: str = Form(default="Team")
+):
+    """Upload a document to the vault with metadata indexing"""
+    content = await file.read()
+    file_hash = compute_file_hash(content)
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    # Create storage path
+    storage_path = f"/deals/{deal_room_id}/{folder}/{file.filename}"
     
-    return status_checks
+    # Store file content in base64 (in production, use actual cloud storage)
+    file_content_b64 = base64.b64encode(content).decode('utf-8')
+    
+    # Create document metadata
+    doc_metadata = DocumentMetadata(
+        deal_room_id=deal_room_id,
+        file_name=file.filename,
+        file_size=len(content),
+        file_type=file.content_type or "application/octet-stream",
+        folder=folder,
+        file_hash=file_hash,
+        access_level=access_level,
+        storage_path=storage_path,
+        indexing_status="processing"
+    )
+    
+    doc = doc_metadata.model_dump()
+    doc['uploaded_at'] = doc['uploaded_at'].isoformat()
+    doc['file_content'] = file_content_b64  # Store content (in production, use cloud storage URL)
+    
+    await db.documents.insert_one(doc)
+    
+    # Simulate indexing completion after upload
+    await db.documents.update_one(
+        {"id": doc_metadata.id},
+        {"$set": {
+            "indexing_status": "indexed",
+            "indexed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "id": doc_metadata.id,
+        "file_name": doc_metadata.file_name,
+        "file_hash": doc_metadata.file_hash,
+        "storage_path": storage_path,
+        "indexing_status": "indexed"
+    }
+
+@api_router.get("/documents/{deal_room_id}")
+async def get_documents(deal_room_id: str, folder: Optional[str] = None):
+    """Get all documents for a deal room"""
+    query = {"deal_room_id": deal_room_id}
+    if folder:
+        query["folder"] = folder
+    
+    documents = await db.documents.find(
+        query, 
+        {"_id": 0, "file_content": 0}  # Exclude binary content
+    ).to_list(100)
+    
+    for doc in documents:
+        if isinstance(doc.get('uploaded_at'), str):
+            doc['uploaded_at'] = datetime.fromisoformat(doc['uploaded_at'])
+        if doc.get('indexed_at') and isinstance(doc['indexed_at'], str):
+            doc['indexed_at'] = datetime.fromisoformat(doc['indexed_at'])
+    
+    return documents
+
+@api_router.get("/documents/download/{document_id}")
+async def download_document(document_id: str):
+    """Download a document from the vault"""
+    doc = await db.documents.find_one({"id": document_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    return {
+        "file_name": doc["file_name"],
+        "file_type": doc["file_type"],
+        "content": doc.get("file_content", "")
+    }
+
+@api_router.delete("/documents/{document_id}")
+async def delete_document(document_id: str):
+    """Delete a document from the vault"""
+    result = await db.documents.delete_one({"id": document_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"message": "Document deleted"}
+
+# ============== CHAT / ADVISORY ENDPOINT ==============
+
+@api_router.post("/chat", response_model=ChatResponse)
+async def chat_with_advocate(request: ChatRequest):
+    """Chat with the GCC Senior Advocate AI"""
+    reference_id = f"GCC-{uuid.uuid4().hex[:8].upper()}"
+    
+    # Get relevant documents for context if deal_room_id provided
+    context_docs = []
+    if request.deal_room_id:
+        docs = await db.documents.find(
+            {"deal_room_id": request.deal_room_id, "indexing_status": "indexed"},
+            {"_id": 0, "file_name": 1, "folder": 1}
+        ).to_list(10)
+        context_docs = [f"{d['folder']}/{d['file_name']}" for d in docs]
+    
+    # Generate AI response (mock response for now - in production integrate with LLM)
+    system_prompt = get_gcc_sae_system_prompt(request.jurisdiction)
+    
+    # Mock intelligent response based on query
+    query_lower = request.message.lower()
+    
+    if "cama" in query_lower or "nigeria" in query_lower:
+        response = f"""**Strategic Directive (REF: {reference_id})**
+
+Under CAMA 2020, the following considerations apply to your query:
+
+1. **Corporate Structure**: Section 18 requires minimum share capital of NGN 100,000 for private companies. For cross-border transactions, consider a holding structure with Delaware Parent and Nigerian OpCo.
+
+2. **Regulatory Filings**: CAC annual returns must be filed within 42 days of AGM. Non-compliance attracts penalties under Section 423.
+
+3. **Foreign Investment**: NOTAP registration is mandatory for technology transfer agreements. Failure to register renders agreements unenforceable.
+
+**Recommendation**: Engage local counsel for SEC Nigeria notification if raising capital from more than 50 investors.
+
+*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*"""
+    
+    elif "delaware" in query_lower or "dgcl" in query_lower or "us" in query_lower:
+        response = f"""**Legal Opinion (REF: {reference_id})**
+
+Under Delaware General Corporation Law:
+
+1. **Formation**: DGCL Section 102(a) permits broad purpose clauses. Standard "any lawful business" language recommended.
+
+2. **Board Authority**: Section 141(a) vests management in the board. Shareholder agreements cannot materially restrict board discretion.
+
+3. **Fiduciary Duties**: Directors owe duties of care and loyalty. Business judgment rule provides substantial protection under Aronson v. Lewis.
+
+**Cross-Border Consideration**: For Nigerian operations, structure as Delaware Parent → Nigerian Sub. This preserves Delaware flexibility while ensuring CAMA compliance.
+
+*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*"""
+    
+    elif "m&a" in query_lower or "acquisition" in query_lower or "merger" in query_lower:
+        response = f"""**Strategic Directive (REF: {reference_id})**
+
+For cross-border M&A involving Nigeria and US entities:
+
+1. **Structure Options**:
+   - Stock-for-stock merger (tax-free reorganization under IRC 368)
+   - Asset purchase (cleaner separation, higher tax friction)
+   - Reverse triangular merger (preserve target contracts)
+
+2. **Nigerian Regulatory Approvals**:
+   - SEC Nigeria approval for transactions >NGN 500M
+   - CBN approval for foreign exchange remittances
+   - FCCPC merger notification thresholds apply
+
+3. **Due Diligence Priority**:
+   - Land titles (verify Governor's Consent)
+   - Employment obligations (NSITF, ITF contributions)
+   - Environmental permits
+
+**Timeline**: Allow 90-120 days for Nigerian regulatory approvals.
+
+*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*"""
+    
+    else:
+        response = f"""**Advisory Response (REF: {reference_id})**
+
+Greetings. I am the Global Corporate Counsel & Senior Advocate Engine. I have access to the full repository of CAMA 2020, DGCL, and International Precedents.
+
+I stand ready to apply the full weight of the law to secure your commercial interests. How may I guide your Board today?
+
+**Available Advisory Services**:
+- Cross-border transaction structuring
+- Regulatory compliance mapping (SEC, CBN, CAC, UK FCA)
+- Due diligence coordination
+- Contract risk analysis
+- Corporate governance advisory
+
+*Current jurisdiction context: {request.jurisdiction}*
+*Documents in vault: {len(context_docs)} indexed*"""
+    
+    # Log the advisory
+    if request.deal_room_id:
+        log = AdvisoryLog(
+            deal_room_id=request.deal_room_id,
+            type="legal_opinion" if "opinion" in query_lower else "strategic_directive",
+            content=response,
+            prompt_used=request.message,
+            jurisdiction_context=request.jurisdiction
+        )
+        log_doc = log.model_dump()
+        log_doc['timestamp'] = log_doc['timestamp'].isoformat()
+        await db.advisory_logs.insert_one(log_doc)
+    
+    return ChatResponse(
+        response=response,
+        reference_id=reference_id,
+        jurisdiction=request.jurisdiction,
+        timestamp=datetime.now(timezone.utc)
+    )
+
+# ============== AUDIT TRAIL ==============
+
+@api_router.get("/audit-trail/{deal_room_id}")
+async def get_audit_trail(deal_room_id: str):
+    """Get complete audit trail for a deal room"""
+    # Get advisory logs
+    logs = await db.advisory_logs.find(
+        {"deal_room_id": deal_room_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(100)
+    
+    # Get document uploads
+    docs = await db.documents.find(
+        {"deal_room_id": deal_room_id},
+        {"_id": 0, "file_content": 0}
+    ).sort("uploaded_at", -1).to_list(100)
+    
+    # Get compliance updates
+    checklists = await db.compliance_checklists.find(
+        {"deal_room_id": deal_room_id},
+        {"_id": 0}
+    ).sort("updated_at", -1).to_list(50)
+    
+    return {
+        "advisory_logs": logs,
+        "document_uploads": docs,
+        "compliance_updates": checklists
+    }
+
+# ============== STATS ==============
+
+@api_router.get("/stats")
+async def get_stats():
+    """Get system statistics"""
+    deal_rooms_count = await db.deal_rooms.count_documents({})
+    documents_count = await db.documents.count_documents({})
+    advisory_logs_count = await db.advisory_logs.count_documents({})
+    
+    # Compliance stats
+    compliant_count = await db.compliance_checklists.count_documents({"status": "compliant"})
+    pending_count = await db.compliance_checklists.count_documents({"status": "pending"})
+    overdue_count = await db.compliance_checklists.count_documents({"status": "overdue"})
+    
+    return {
+        "deal_rooms": deal_rooms_count,
+        "documents": documents_count,
+        "advisory_logs": advisory_logs_count,
+        "compliance": {
+            "compliant": compliant_count,
+            "pending": pending_count,
+            "overdue": overdue_count
+        }
+    }
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -76,13 +572,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
