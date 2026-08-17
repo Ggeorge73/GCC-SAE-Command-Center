@@ -2,6 +2,8 @@
 
 **An enterprise legal-AI workspace with an administration layer for adoption, governance, and measurable value.**
 
+**Live portfolio demo:** [GCC Control Center](https://ggeorge73.github.io/GCC-SAE-Emergent/)
+
 GCC-SAE started as a cross-border legal advisory and document workspace. This portfolio version adds a second product surface—the **GCC Control Center**—for the people responsible for operating legal AI across a firm or legal department.
 
 The product thesis is simple: provisioning access is not the same as creating value. Enterprise administrators need to know whether teams are adopting AI, whether use is becoming more sophisticated, where governance is exposed, and what intervention to make next.
