@@ -8,6 +8,8 @@ import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
+from google import genai
+from google.genai import types
 import uuid
 from datetime import datetime, timezone
 import hashlib
@@ -18,16 +20,15 @@ import base64
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# Import LLM integration
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # LLM Configuration
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro')
+genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # Create the main app
 app = FastAPI(title="GCC-SAE API", description="Global Corporate Counsel - Senior Advocate Engine")
@@ -466,7 +467,7 @@ async def delete_document(document_id: str):
 # ============== CHAT / ADVISORY ENDPOINT ==============
 
 # Store for chat sessions (in production, use Redis or database)
-chat_sessions: Dict[str, LlmChat] = {}
+chat_sessions: Dict[str, Any] = {}
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_advocate(request: ChatRequest):
@@ -486,23 +487,26 @@ async def chat_with_advocate(request: ChatRequest):
     session_id = request.deal_room_id or f"global-{uuid.uuid4().hex[:8]}"
     
     try:
-        # Create or retrieve chat session
+        if genai_client is None:
+            raise RuntimeError("GEMINI_API_KEY is not configured")
+
+        # Create or retrieve a direct Google Gen AI chat session.
         if session_id not in chat_sessions:
             system_prompt = get_gcc_sae_system_prompt(request.jurisdiction, context_docs)
-            chat = LlmChat(
-                api_key=EMERGENT_LLM_KEY,
-                session_id=session_id,
-                system_message=system_prompt
-            ).with_model("gemini", "gemini-2.5-pro")
+            chat = genai_client.aio.chats.create(
+                model=GEMINI_MODEL,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    temperature=0.2,
+                ),
+            )
             chat_sessions[session_id] = chat
         else:
             chat = chat_sessions[session_id]
-        
-        # Create user message
-        user_message = UserMessage(text=request.message)
-        
+
         # Get AI response
-        ai_response = await chat.send_message(user_message)
+        ai_result = await chat.send_message(request.message)
+        ai_response = ai_result.text or ""
         
         # Format response with proper header and reference at top
         formatted_response = f"""**STRATEGIC ADVISORY**

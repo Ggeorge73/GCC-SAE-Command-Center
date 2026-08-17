@@ -39,8 +39,7 @@ jobs:
         env:
           CI: true
           GENERATE_SOURCEMAP: false
-          PUBLIC_URL: /GCC-SAE-Emergent
-          ENABLE_VISUAL_EDITS: false
+          PUBLIC_URL: /GCC-SAE-Command-Center
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

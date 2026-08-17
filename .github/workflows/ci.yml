@@ -29,7 +29,6 @@ jobs:
           CI: true
           GENERATE_SOURCEMAP: false
           REACT_APP_BACKEND_URL: http://127.0.0.1:8001
-          ENABLE_VISUAL_EDITS: false
 
   backend:
     name: Backend static validation

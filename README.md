@@ -2,7 +2,7 @@
 
 **An enterprise legal-AI workspace with an administration layer for adoption, governance, and measurable value.**
 
-**Live portfolio demo:** [GCC Control Center](https://ggeorge73.github.io/GCC-SAE-Emergent/)
+**Live portfolio demo:** [GCC Control Center](https://ggeorge73.github.io/GCC-SAE-Command-Center/)
 
 GCC-SAE started as a cross-border legal advisory and document workspace. This portfolio version adds a second product surface—the **GCC Control Center**—for the people responsible for operating legal AI across a firm or legal department.
 
@@ -63,11 +63,18 @@ The dashboard is therefore not optimized for the number of charts. It is optimiz
 - **Synthetic data is explicit.** A portfolio should demonstrate product logic without implying access to enterprise customer data.
 - **The practitioner and administrator experiences remain connected.** The same product can show how workflow events become organization-level signals.
 
+## AI-assisted product development
+
+GCC-SAE was built through an AI-assisted product-development workflow. AI accelerated exploration, implementation, refactoring, documentation, and verification; the product direction, prioritization, metric model, governance boundaries, acceptance criteria, and release decisions were human-led.
+
+The repository preserves its Git history and does not claim that every scaffolded line was handwritten. The portfolio evidence is the ability to turn a broad prototype into a coherent enterprise product, remove proprietary runtime coupling, define trustworthy operating metrics, validate the implementation, and deliver a public release. The complete working method and contribution boundaries are documented in [`docs/AI_ASSISTED_DEVELOPMENT.md`](docs/AI_ASSISTED_DEVELOPMENT.md).
+
 More detail is available in:
 
 - [`docs/PRODUCT_CASE_STUDY.md`](docs/PRODUCT_CASE_STUDY.md) — discovery framing, metric tree, prioritization, and roadmap
 - [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) — a concise hiring-manager walkthrough
 - [`docs/SECURITY_AND_GOVERNANCE.md`](docs/SECURITY_AND_GOVERNANCE.md) — current gaps, target controls, and release gates
+- [`docs/AI_ASSISTED_DEVELOPMENT.md`](docs/AI_ASSISTED_DEVELOPMENT.md) — development method, contribution boundaries, and verification discipline
 
 ## Architecture
 
@@ -76,7 +83,7 @@ flowchart TB
     UI[React practitioner workspace] --> API[FastAPI service]
     CC[React Control Center] --> TS[Telemetry and admin service - target]
     API --> DB[(MongoDB metadata)]
-    API --> LLM[Gemini via Emergent integration]
+    API --> LLM[Gemini via Google Gen AI SDK]
     UI --> FS[Firebase Storage]
     TS --> IDP[Identity provider via SSO and SCIM - target]
     TS --> WH[(Event warehouse - target)]
@@ -90,7 +97,7 @@ The current Control Center uses synthetic in-browser data to make the product mo
 - React 19, Tailwind CSS, shadcn/ui, Recharts
 - FastAPI, Pydantic, Motor, MongoDB
 - Firebase Storage with MongoDB fallback
-- Gemini 2.5 Pro through the Emergent integration layer
+- Gemini 2.5 Pro through Google's official Gen AI SDK
 
 ## Run locally
 
