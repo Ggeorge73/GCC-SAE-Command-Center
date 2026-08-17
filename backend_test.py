@@ -14,7 +14,7 @@ from typing import Dict, Any, List, Optional
 
 class GCCSAEAPITester:
     def __init__(self):
-        self.base_url = "https://firestore-advisory.preview.emergentagent.com/api"
+        self.base_url = os.environ.get("GCC_SAE_API_URL", "http://127.0.0.1:8001/api")
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []
