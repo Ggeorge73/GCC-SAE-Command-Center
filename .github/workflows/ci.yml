@@ -1,0 +1,44 @@
+name: Portfolio CI
+
+on:
+  push:
+    branches: [main, portfolio-command-center]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+        env:
+          CI: true
+          GENERATE_SOURCEMAP: false
+          REACT_APP_BACKEND_URL: http://127.0.0.1:8001
+          ENABLE_VISUAL_EDITS: false
+
+  backend:
+    name: Backend static validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r backend/requirements.txt
+      - run: python -m py_compile backend/server.py backend_test.py

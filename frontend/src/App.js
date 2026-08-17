@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import CommandCenter from "@/components/CommandCenter";
 import {
   Select,
   SelectContent,
@@ -301,7 +302,7 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
 };
 
 // Header Component
-const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage }) => (
+const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage, workspaceMode, setWorkspaceMode }) => (
   <header className="glass-header h-14 flex items-center justify-between px-4 sticky top-0 z-20">
     <div className="flex items-center gap-4">
       {/* Mobile menu */}
@@ -312,14 +313,14 @@ const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage 
       {/* Deal room info */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-sm bg-[var(--accent-gold-dim)] flex items-center justify-center text-[var(--primary)] font-serif font-semibold">
-          S
+          {workspaceMode === "control" ? "C" : "S"}
         </div>
         <div>
           <h2 className="font-serif font-semibold text-[var(--foreground)]">
-            {selectedDealRoom?.name || "GCC-SAE"}
+            {workspaceMode === "control" ? "GCC Control Center" : (selectedDealRoom?.name || "GCC-SAE")}
           </h2>
           <p className="text-[10px] text-[var(--foreground-muted)]">
-            Privileged & Confidential
+            {workspaceMode === "control" ? "Adoption · Governance · Value" : "Privileged & Confidential"}
           </p>
         </div>
       </div>
@@ -327,7 +328,7 @@ const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage 
 
     <div className="flex items-center gap-3">
       {/* Case ID */}
-      {selectedDealRoom && (
+      {workspaceMode === "workspace" && selectedDealRoom && (
         <div className="hidden sm:flex flex-col items-end mr-2">
           <span className="text-[10px] text-[var(--foreground-muted)]">CASE ID</span>
           <span className="text-xs font-mono text-[var(--foreground)]">
@@ -337,19 +338,41 @@ const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage 
       )}
 
       {/* Action buttons */}
-      <Button variant="outline" size="sm" className="btn-secondary rounded-sm h-8 text-xs hidden sm:flex">
-        <Building2 className="w-3 h-3 mr-1" />
-        Call Counsel
-      </Button>
+      {workspaceMode === "workspace" && (
+        <Button variant="outline" size="sm" className="btn-secondary rounded-sm h-8 text-xs hidden xl:flex">
+          <Building2 className="w-3 h-3 mr-1" />
+          Call Counsel
+        </Button>
+      )}
       
       {/* Secure badge */}
       <div className="flex items-center gap-1 px-2 py-1 badge-encrypted rounded-sm">
         <Lock className="w-3 h-3" />
-        <span className="text-[10px] font-bold">SECURE</span>
+        <span className="text-[10px] font-bold">{workspaceMode === "control" ? "ADMIN" : "SECURE"}</span>
+      </div>
+
+      {/* Primary workspace switcher */}
+      <div className="hidden lg:flex items-center rounded-sm border border-[var(--navy-light)] bg-[var(--background-secondary)] p-0.5">
+        <button
+          type="button"
+          onClick={() => setWorkspaceMode("workspace")}
+          className={`h-7 px-2.5 text-[10px] font-semibold transition ${workspaceMode === "workspace" ? "bg-[var(--accent-gold-dim)] text-[var(--primary)]" : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"}`}
+          data-testid="workspace-mode"
+        >
+          Deal workspace
+        </button>
+        <button
+          type="button"
+          onClick={() => setWorkspaceMode("control")}
+          className={`h-7 px-2.5 text-[10px] font-semibold transition ${workspaceMode === "control" ? "bg-[var(--accent-gold-dim)] text-[var(--primary)]" : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"}`}
+          data-testid="control-center-mode"
+        >
+          Control Center
+        </button>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden md:block">
+      {workspaceMode === "workspace" && <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden md:block">
         <TabsList className="bg-[var(--background-secondary)] h-8">
           <TabsTrigger
             data-testid="tab-vault"
@@ -366,12 +389,12 @@ const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage 
             Audit Trail
           </TabsTrigger>
         </TabsList>
-      </Tabs>
+      </Tabs>}
 
       {/* User menu */}
       <div className="flex items-center gap-2 pl-3 border-l border-[var(--navy-light)]">
         <span className="text-[10px] text-[var(--foreground-muted)] hidden lg:block">
-          gbenga_george@hotmail.com
+          Firm Administrator
         </span>
         <button className="p-1 hover:bg-[var(--background-secondary)] rounded-sm">
           <LogOut className="w-4 h-4 text-[var(--foreground-muted)]" />
@@ -816,6 +839,10 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [useFirebaseStorage, setUseFirebaseStorage] = useState(isFirebaseAvailable());
+  // Lead with the portfolio's enterprise administration surface. The
+  // practitioner workspace remains one click away and loads its API data only
+  // when requested.
+  const [workspaceMode, setWorkspaceMode] = useState("control");
 
   // Fetch deal rooms
   const fetchDealRooms = useCallback(async () => {
@@ -861,8 +888,10 @@ function App() {
 
   // Initial load
   useEffect(() => {
-    fetchDealRooms();
-  }, [fetchDealRooms]);
+    if (workspaceMode === "workspace") {
+      fetchDealRooms();
+    }
+  }, [fetchDealRooms, workspaceMode]);
 
   // Load deal room data when selected
   useEffect(() => {
@@ -1023,57 +1052,65 @@ function App() {
       <Toaster position="top-right" richColors />
       
       {/* Sidebar */}
-      <Sidebar
-        dealRooms={dealRooms}
-        selectedDealRoom={selectedDealRoom}
-        onSelectDealRoom={setSelectedDealRoom}
-        onCreateDealRoom={handleCreateDealRoom}
-        complianceItems={complianceItems}
-        onUpdateCompliance={handleUpdateCompliance}
-      />
+      {workspaceMode === "workspace" && (
+        <Sidebar
+          dealRooms={dealRooms}
+          selectedDealRoom={selectedDealRoom}
+          onSelectDealRoom={setSelectedDealRoom}
+          onCreateDealRoom={handleCreateDealRoom}
+          complianceItems={complianceItems}
+          onUpdateCompliance={handleUpdateCompliance}
+        />
+      )}
 
       {/* Main content */}
-      <main className="flex-1 md:ml-[240px] flex flex-col h-full overflow-hidden">
+      <main className={`flex-1 flex flex-col h-full overflow-hidden ${workspaceMode === "workspace" ? "md:ml-[240px]" : ""}`}>
         {/* Header */}
         <Header
           selectedDealRoom={selectedDealRoom}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           useFirebaseStorage={useFirebaseStorage}
+          workspaceMode={workspaceMode}
+          setWorkspaceMode={setWorkspaceMode}
         />
 
-        {/* Content area */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Chat panel */}
-          <div className="flex-1 lg:border-r lg:border-[var(--navy-light)]">
-            <ChatPanel
-              selectedDealRoom={selectedDealRoom}
-              jurisdiction={jurisdiction}
-              setJurisdiction={setJurisdiction}
-            />
-          </div>
+        {workspaceMode === "control" ? (
+          <CommandCenter />
+        ) : (
+          /* Content area */
+          <div className="flex-1 flex overflow-hidden">
+            {/* Chat panel */}
+            <div className="flex-1 lg:border-r lg:border-[var(--navy-light)]">
+              <ChatPanel
+                selectedDealRoom={selectedDealRoom}
+                jurisdiction={jurisdiction}
+                setJurisdiction={setJurisdiction}
+              />
+            </div>
 
-          {/* Right panel (Vault/Audit) */}
-          <div className="hidden lg:block w-[360px] bg-[var(--background-secondary)]/50">
-            {activeTab === "vault" ? (
-              <DocumentVault
-                selectedDealRoom={selectedDealRoom}
-                documents={documents}
-                onUpload={handleUploadDocument}
-                onDelete={handleDeleteDocument}
-                onRefresh={() => selectedDealRoom && fetchDocuments(selectedDealRoom.id)}
-                isUploading={isUploading}
-                uploadProgress={uploadProgress}
-                useFirebaseStorage={useFirebaseStorage}
-              />
-            ) : (
-              <AuditTrail
-                selectedDealRoom={selectedDealRoom}
-                auditData={auditData}
-              />
-            )}
+            {/* Right panel (Vault/Audit) */}
+            <div className="hidden lg:block w-[360px] bg-[var(--background-secondary)]/50">
+              {activeTab === "vault" ? (
+                <DocumentVault
+                  selectedDealRoom={selectedDealRoom}
+                  documents={documents}
+                  onUpload={handleUploadDocument}
+                  onDelete={handleDeleteDocument}
+                  onRefresh={() => selectedDealRoom && fetchDocuments(selectedDealRoom.id)}
+                  isUploading={isUploading}
+                  uploadProgress={uploadProgress}
+                  useFirebaseStorage={useFirebaseStorage}
+                />
+              ) : (
+                <AuditTrail
+                  selectedDealRoom={selectedDealRoom}
+                  auditData={auditData}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

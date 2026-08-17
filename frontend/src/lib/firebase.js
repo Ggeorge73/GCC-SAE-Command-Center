@@ -3,15 +3,16 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
-// Firebase configuration
+// Firebase public client configuration. Access control must be enforced through
+// authenticated Firebase Security Rules; configuration values are injected per
+// environment instead of being coupled to the source tree.
 const firebaseConfig = {
-  apiKey: "AIzaSyBVGXY40wIFGfdIT0YhefZIXYBSBYTcUtk",
-  authDomain: "gcc-sae-emergent-build.firebaseapp.com",
-  projectId: "gcc-sae-emergent-build",
-  storageBucket: "gcc-sae-emergent-build.firebasestorage.app",
-  messagingSenderId: "899804180054",
-  appId: "1:899804180054:web:0306d98a670d64ba0055f7",
-  measurementId: "G-JTN275HESC"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase (singleton pattern)
@@ -19,9 +20,14 @@ let app;
 let storage;
 
 try {
-  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-  storage = getStorage(app);
-  console.log('Firebase initialized successfully');
+  const hasFirebaseConfig = Object.values(firebaseConfig).every(Boolean);
+  if (hasFirebaseConfig) {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    storage = getStorage(app);
+    console.log('Firebase initialized successfully');
+  } else {
+    console.info('Firebase configuration not provided; using backend storage fallback');
+  }
 } catch (error) {
   console.error('Firebase initialization error:', error);
 }
