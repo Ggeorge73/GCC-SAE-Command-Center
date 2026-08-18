@@ -123,6 +123,29 @@ npm start
 
 Open `http://localhost:3000`. The portfolio opens on **Control Center**; the original **Deal workspace** remains available in the header.
 
+## Automated quality gates
+
+Every push and pull request runs two independent checks before a `main` build can be deployed:
+
+- **Backend integration:** starts FastAPI against a disposable MongoDB service and exercises health, deal-room creation, jurisdiction checklists, document upload, advisory fallback behavior, audit history, statistics, and cleanup. CI uses `GCC_SAE_AI_MODE=offline` so the suite is deterministic and does not require a production AI credential. Live Gemini checks remain available with `RUN_LIVE_AI_TESTS=true`.
+- **Control Center browser tests:** launches the React application in Chromium and verifies the portfolio disclosure, adoption and timeframe filters, deployment insights, identity search and role filters, recommendation activation, and CSV export.
+
+The GitHub Pages artifact is built and deployed only after both jobs pass. Failed browser runs retain a Playwright HTML report, screenshots, video, and traces for diagnosis.
+
+Run the browser suite locally after installing Chromium:
+
+```bash
+cd frontend
+npx playwright install chromium
+npm run test:e2e
+```
+
+Run the backend integration harness against a configured local API:
+
+```bash
+GCC_SAE_API_URL=http://127.0.0.1:8001/api python backend_test.py
+```
+
 ## Current maturity
 
 | Capability | Portfolio state | Production requirement |
@@ -132,7 +155,7 @@ Open `http://localhost:3000`. The portfolio opens on **Control Center**; the ori
 | Identity administration | Workflow prototype | SAML/OIDC SSO, SCIM, approval policy, and provider-backed mutations |
 | Governance coverage | Product model and UI | Policy engine, immutable audit export, alerting, and evidence retention |
 | AI deployment insights | Deterministic explainable examples | Governed analytics agent with scoped queries and evaluation suite |
-| Automated testing | Backend integration script | Unit, contract, accessibility, security, and browser suites in CI |
+| Automated testing | MongoDB-backed API integration and Chromium workflow suites in CI | Unit-level coverage, accessibility scanning, security tests, and live-model evaluations |
 
 ## Success metrics
 

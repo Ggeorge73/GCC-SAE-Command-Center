@@ -18,6 +18,8 @@ node_modules/
 
 # Testing
 /coverage
+frontend/playwright-report/
+frontend/test-results/
 
 # Next.js
 /.next/

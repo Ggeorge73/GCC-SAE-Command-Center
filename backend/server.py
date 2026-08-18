@@ -28,7 +28,8 @@ db = client[os.environ['DB_NAME']]
 # LLM Configuration
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro')
-genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+GCC_SAE_AI_MODE = os.environ.get('GCC_SAE_AI_MODE', 'live').lower()
+genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and GCC_SAE_AI_MODE == 'live' else None
 
 # Create the main app
 app = FastAPI(title="GCC-SAE API", description="Global Corporate Counsel - Senior Advocate Engine")
@@ -488,7 +489,7 @@ async def chat_with_advocate(request: ChatRequest):
     
     try:
         if genai_client is None:
-            raise RuntimeError("GEMINI_API_KEY is not configured")
+            raise RuntimeError("Gemini is unavailable or GCC_SAE_AI_MODE is offline")
 
         # Create or retrieve a direct Google Gen AI chat session.
         if session_id not in chat_sessions:
