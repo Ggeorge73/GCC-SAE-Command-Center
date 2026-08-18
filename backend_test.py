@@ -15,6 +15,7 @@ from typing import Dict, Any, List, Optional
 class GCCSAEAPITester:
     def __init__(self):
         self.base_url = os.environ.get("GCC_SAE_API_URL", "http://127.0.0.1:8001/api")
+        self.run_live_ai_tests = os.environ.get("RUN_LIVE_AI_TESTS", "false").lower() in {"1", "true", "yes"}
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []
@@ -234,6 +235,54 @@ class GCCSAEAPITester:
         except Exception as e:
             self.log_result("Get Documents", False, f"Error: {str(e)}")
             return False
+
+    def test_ai_fallback_contract(self) -> bool:
+        """Verify deterministic advisory behavior without external AI credentials."""
+        test_cases = [
+            {
+                "jurisdiction": "NIGERIA (CAMA 2020)",
+                "message": "What does CAMA 2020 require for a Nigerian company?",
+                "expected": ["CAMA 2020", "Section 18", "AI service temporarily unavailable"],
+            },
+            {
+                "jurisdiction": "US (DELAWARE DGCL)",
+                "message": "Explain DGCL Section 141(a) for a Delaware board.",
+                "expected": ["DGCL", "Section 141", "AI service temporarily unavailable"],
+            },
+        ]
+
+        successful_cases = 0
+        for test_case in test_cases:
+            try:
+                response = requests.post(
+                    f"{self.base_url}/chat",
+                    json={
+                        "deal_room_id": self.created_deal_room_id,
+                        "message": test_case["message"],
+                        "jurisdiction": test_case["jurisdiction"],
+                    },
+                    timeout=10,
+                )
+                if response.status_code != 200:
+                    continue
+
+                payload = response.json()
+                response_text = payload.get("response", "")
+                has_contract = all(value in response_text for value in test_case["expected"])
+                has_reference = bool(payload.get("reference_id")) and "REF:" in response_text
+                has_jurisdiction = payload.get("jurisdiction") == test_case["jurisdiction"]
+                if has_contract and has_reference and has_jurisdiction:
+                    successful_cases += 1
+            except Exception:
+                continue
+
+        success = successful_cases == len(test_cases)
+        self.log_result(
+            "AI Fallback Contract",
+            success,
+            f"{successful_cases}/{len(test_cases)} deterministic jurisdiction responses passed",
+        )
+        return success
             
     def test_ai_chat_real_gemini(self) -> bool:
         """Test AI chat with real Gemini 2.5 Pro responses (not mocked)"""
@@ -541,12 +590,21 @@ class GCCSAEAPITester:
             self.test_compliance_checklists_auto_creation,
             self.test_document_upload,
             self.test_get_documents,
-            self.test_ai_chat_real_gemini,
-            self.test_multi_turn_conversation,
-            self.test_jurisdiction_specific_responses,
-            self.test_audit_trail,
-            self.test_stats_endpoint
         ]
+
+        if self.run_live_ai_tests:
+            test_sequence.extend([
+                self.test_ai_chat_real_gemini,
+                self.test_multi_turn_conversation,
+                self.test_jurisdiction_specific_responses,
+            ])
+        else:
+            test_sequence.append(self.test_ai_fallback_contract)
+
+        test_sequence.extend([
+            self.test_audit_trail,
+            self.test_stats_endpoint,
+        ])
         
         for test_func in test_sequence:
             try:
