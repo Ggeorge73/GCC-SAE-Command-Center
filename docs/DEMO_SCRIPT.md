@@ -2,7 +2,7 @@
 
 ## Positioning
 
-“GCC-SAE began as a practitioner-facing legal AI deal room. I used it to explore a second problem: once an enterprise provisions legal AI, how does an administrator know whether it is creating value safely—and what should they do next?”
+“Law Suite began as a practitioner-facing legal AI deal room. I used it to explore a second problem: once an enterprise provisions legal AI, how does an administrator know whether it is creating value safely—and what should they do next?”
 
 Do not position the project as a competitor clone. Position it as evidence of how you approach an enterprise administration problem.
 

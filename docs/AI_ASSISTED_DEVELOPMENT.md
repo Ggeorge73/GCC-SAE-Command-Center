@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document explains how GCC-SAE was built and what the portfolio is intended to demonstrate. It is a transparent account of AI-assisted development, not a claim that every line was written manually or that synthetic product evidence came from real customers.
+This document explains how Law Suite was built and what the portfolio is intended to demonstrate. It is a transparent account of AI-assisted development, not a claim that every line was written manually or that synthetic product evidence came from real customers.
 
 ## The development model
 

@@ -189,7 +189,7 @@ const CommandCenter = () => {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "gcc-control-center-adoption-report.csv";
+    anchor.download = "law-suite-control-center-adoption-report.csv";
     anchor.click();
     URL.revokeObjectURL(url);
     toast.success("Adoption report exported");
@@ -210,7 +210,7 @@ const CommandCenter = () => {
                 Sample portfolio data
               </span>
             </div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-white md:text-4xl">GCC Control Center</h1>
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-white md:text-4xl">Law Suite Control Center</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
               Turn legal-AI usage into an operating system for adoption, governance, and measurable value—not another static analytics dashboard.
             </p>
@@ -471,7 +471,7 @@ const CommandCenter = () => {
         </section>
 
         <footer className="mt-5 flex flex-col justify-between gap-2 border-t border-white/5 py-4 text-[10px] text-slate-600 sm:flex-row">
-          <span>Portfolio concept · GCC-SAE enterprise administration</span>
+          <span>Portfolio concept · Law Suite enterprise administration</span>
           <span>Metrics are synthetic and explicitly labeled; product decisions and workflows are original.</span>
         </footer>
       </div>

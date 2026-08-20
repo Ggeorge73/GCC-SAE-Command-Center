@@ -30,7 +30,7 @@ jobs:
         env:
           CI: true
           GENERATE_SOURCEMAP: false
-          PUBLIC_URL: /GCC-SAE-Command-Center
+          PUBLIC_URL: /${{ github.event.repository.name }}
           REACT_APP_BACKEND_URL: http://127.0.0.1:8001
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -73,13 +73,13 @@ jobs:
       - name: Start isolated API and run integration suite
         env:
           MONGO_URL: mongodb://127.0.0.1:27017
-          DB_NAME: gcc_sae_ci_${{ github.run_id }}_${{ github.run_attempt }}
+          DB_NAME: law_suite_ci_${{ github.run_id }}_${{ github.run_attempt }}
           CORS_ORIGINS: http://127.0.0.1:4173
-          GCC_SAE_AI_MODE: offline
-          GCC_SAE_API_URL: http://127.0.0.1:8001/api
+          LAW_SUITE_AI_MODE: offline
+          LAW_SUITE_API_URL: http://127.0.0.1:8001/api
           RUN_LIVE_AI_TESTS: false
         run: |
-          uvicorn backend.server:app --host 127.0.0.1 --port 8001 > /tmp/gcc-sae-api.log 2>&1 &
+          uvicorn backend.server:app --host 127.0.0.1 --port 8001 > /tmp/law-suite-api.log 2>&1 &
           api_pid=$!
           trap 'kill "$api_pid" 2>/dev/null || true' EXIT
 
@@ -91,7 +91,7 @@ jobs:
           done
 
           if ! curl --fail --silent http://127.0.0.1:8001/api/ > /dev/null; then
-            cat /tmp/gcc-sae-api.log
+            cat /tmp/law-suite-api.log
             exit 1
           fi
 
@@ -118,7 +118,7 @@ jobs:
         env:
           CI: true
           GENERATE_SOURCEMAP: false
-          PUBLIC_URL: /GCC-SAE-Command-Center
+          PUBLIC_URL: /${{ github.event.repository.name }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

@@ -1,4 +1,4 @@
-// Firebase Configuration for GCC-SAE
+// Firebase configuration for Law Suite
 // Hybrid mode: Firebase Storage + MongoDB for data
 import { initializeApp, getApps } from 'firebase/app';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';

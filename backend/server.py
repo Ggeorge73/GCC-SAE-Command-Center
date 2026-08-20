@@ -28,11 +28,11 @@ db = client[os.environ['DB_NAME']]
 # LLM Configuration
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro')
-GCC_SAE_AI_MODE = os.environ.get('GCC_SAE_AI_MODE', 'live').lower()
-genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and GCC_SAE_AI_MODE == 'live' else None
+LAW_SUITE_AI_MODE = os.environ.get('LAW_SUITE_AI_MODE', 'live').lower()
+genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and LAW_SUITE_AI_MODE == 'live' else None
 
 # Create the main app
-app = FastAPI(title="GCC-SAE API", description="Global Corporate Counsel - Senior Advocate Engine")
+app = FastAPI(title="Law Suite API", description="Enterprise legal advisory and document workspace")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -143,13 +143,13 @@ def compute_file_hash(content: bytes) -> str:
     """Compute SHA-256 hash for file integrity verification"""
     return hashlib.sha256(content).hexdigest()
 
-def get_gcc_sae_system_prompt(jurisdiction: str, context_docs: List[str] = None) -> str:
-    """Generate the GCC-SAE system prompt based on jurisdiction"""
+def get_law_suite_system_prompt(jurisdiction: str, context_docs: List[str] = None) -> str:
+    """Generate the Law Suite system prompt based on jurisdiction."""
     docs_context = ""
     if context_docs and len(context_docs) > 0:
         docs_context = f"\n\nDocuments available in the Vault for reference:\n- " + "\n- ".join(context_docs)
     
-    return f"""You are the GCC Senior Advocate, a premier Legal and Strategic Consultant. Your cognitive architecture is modeled after a practitioner with 30+ years of robust experience in cross-border corporate-commercial transactions.
+    return f"""You are the Law Suite Legal Advisor, a premier Legal and Strategic Consultant. Your cognitive architecture is modeled after a practitioner with 30+ years of robust experience in cross-border corporate-commercial transactions.
 
 Your expertise exceeds the combined legal acumen of a British King's Counsel (KC), a Senior Advocate of Nigeria (SAN), and a Senior Partner at top-tier firms (Latham & Watkins, Kirkland & Ellis, Skadden Arps).
 
@@ -203,7 +203,7 @@ Remember: You are advising sophisticated corporate clients. Your advice carries 
 
 @api_router.get("/")
 async def root():
-    return {"message": "GCC-SAE API - Global Corporate Counsel Senior Advocate Engine", "version": "1.0.0"}
+    return {"message": "Law Suite API - Enterprise Legal Advisory Workspace", "version": "1.0.0"}
 
 @api_router.post("/deal-rooms", response_model=DealRoom)
 async def create_deal_room(deal_room: DealRoomCreate):
@@ -472,8 +472,8 @@ chat_sessions: Dict[str, Any] = {}
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_advocate(request: ChatRequest):
-    """Chat with the GCC Senior Advocate AI powered by Gemini 3.1 Pro"""
-    reference_id = f"GCC-{uuid.uuid4().hex[:8].upper()}"
+    """Chat with the Law Suite Legal Advisor powered by Gemini."""
+    reference_id = f"LAW-{uuid.uuid4().hex[:8].upper()}"
     
     # Get relevant documents for context if deal_room_id provided
     context_docs = []
@@ -489,11 +489,11 @@ async def chat_with_advocate(request: ChatRequest):
     
     try:
         if genai_client is None:
-            raise RuntimeError("Gemini is unavailable or GCC_SAE_AI_MODE is offline")
+            raise RuntimeError("Gemini is unavailable or LAW_SUITE_AI_MODE is offline")
 
         # Create or retrieve a direct Google Gen AI chat session.
         if session_id not in chat_sessions:
-            system_prompt = get_gcc_sae_system_prompt(request.jurisdiction, context_docs)
+            system_prompt = get_law_suite_system_prompt(request.jurisdiction, context_docs)
             chat = genai_client.aio.chats.create(
                 model=GEMINI_MODEL,
                 config=types.GenerateContentConfig(
@@ -618,7 +618,7 @@ For cross-border M&A involving Nigeria and US entities:
     else:
         return f"""**Advisory Response (REF: {reference_id})**
 
-I am the Global Corporate Counsel & Senior Advocate Engine, ready to apply the full weight of legal expertise to your commercial interests.
+I am the Law Suite Legal Advisor, ready to apply the full weight of legal expertise to your commercial interests.
 
 **Available Advisory Services**:
 - Cross-border transaction structuring (Nigeria/US/UK)

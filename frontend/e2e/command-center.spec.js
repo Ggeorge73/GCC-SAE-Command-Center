@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 test("opens on the clearly labeled Control Center portfolio surface", async ({ page }) => {
   const commandCenter = page.getByTestId("command-center");
 
-  await expect(commandCenter.getByRole("heading", { name: "GCC Control Center", level: 1 })).toBeVisible();
+  await expect(commandCenter.getByRole("heading", { name: "Law Suite Control Center", level: 1 })).toBeVisible();
   await expect(commandCenter.getByText("Sample portfolio data")).toBeVisible();
   await expect(commandCenter.getByText("Weekly active users")).toBeVisible();
   await expect(commandCenter.getByText("Governed interactions")).toBeVisible();
@@ -51,7 +51,7 @@ test("turns a recommendation into an action and exports the adoption report", as
   await page.getByTestId("export-adoption-report").click();
   const download = await downloadPromise;
 
-  expect(download.suggestedFilename()).toBe("gcc-control-center-adoption-report.csv");
+  expect(download.suggestedFilename()).toBe("law-suite-control-center-adoption-report.csv");
   const csv = await fs.readFile(await download.path(), "utf8");
   expect(csv).toContain('"Practice group","Adoption","Advanced workflow depth","Users"');
   expect(csv).toContain('"Tax","54%","39%","88"');

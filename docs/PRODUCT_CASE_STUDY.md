@@ -2,7 +2,7 @@
 
 ## Executive summary
 
-The original GCC-SAE prototype helped a lawyer work inside a matter: ask a jurisdiction-aware question, upload documents, track compliance, and preserve an audit history.
+The original Law Suite prototype helped a lawyer work inside a matter: ask a jurisdiction-aware question, upload documents, track compliance, and preserve an audit history.
 
 That solved only one side of enterprise adoption. Innovation, Legal Operations, IT, Security, and firm leadership must operate the deployment across hundreds or thousands of people. They need reliable answers to three questions:
 
@@ -10,7 +10,7 @@ That solved only one side of enterprise adoption. Innovation, Legal Operations, 
 2. Is that use consistent with organizational policy?
 3. What action will improve the outcome?
 
-The GCC Control Center is a vertical slice of that administrator experience. It connects adoption analytics, identity governance, and recommended interventions in one workflow.
+The Law Suite Control Center is a vertical slice of that administrator experience. It connects adoption analytics, identity governance, and recommended interventions in one workflow.
 
 ## Problem framing
 

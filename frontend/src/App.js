@@ -95,14 +95,14 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// GCC-SAE Logo
-const GCCLogo = () => (
+// Law Suite logo
+const LawSuiteLogo = () => (
   <div className="flex items-center gap-3">
     <div className="w-8 h-8 rounded-sm bg-[var(--accent-gold-dim)] flex items-center justify-center border border-[var(--border-color)]">
       <Scale className="w-4 h-4 text-[var(--primary)]" />
     </div>
     <div>
-      <h1 className="font-serif text-lg font-semibold text-[var(--foreground)]">GCC-SAE</h1>
+      <h1 className="font-serif text-lg font-semibold text-[var(--foreground)]">Law Suite</h1>
       <p className="text-[10px] text-[var(--foreground-muted)] tracking-wider">Executive Deal Room</p>
     </div>
   </div>
@@ -144,7 +144,7 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
     <aside className="fixed left-0 top-0 h-full w-[240px] border-r border-[var(--navy-light)] bg-[var(--background)] hidden md:flex flex-col z-30">
       {/* Logo */}
       <div className="p-4 border-b border-[var(--navy-light)]">
-        <GCCLogo />
+        <LawSuiteLogo />
       </div>
 
       {/* Active Matters */}
@@ -317,7 +317,7 @@ const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage,
         </div>
         <div>
           <h2 className="font-serif font-semibold text-[var(--foreground)]">
-            {workspaceMode === "control" ? "GCC Control Center" : (selectedDealRoom?.name || "GCC-SAE")}
+            {workspaceMode === "control" ? "Law Suite Control Center" : (selectedDealRoom?.name || "Law Suite")}
           </h2>
           <p className="text-[10px] text-[var(--foreground-muted)]">
             {workspaceMode === "control" ? "Adoption · Governance · Value" : "Privileged & Confidential"}
@@ -442,9 +442,9 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
     if (messages.length === 0) {
       setMessages([{
         id: "welcome",
-        content: `Greetings. I am the Global Corporate Counsel & Senior Advocate Engine. I have access to the full repository of CAMA 2020, DGCL, and International Precedents. I stand ready to apply the full weight of the law to secure your commercial interests. How may I guide your Board today?`,
+        content: `Greetings. I am the Law Suite Legal Advisor. I can help analyze matters using CAMA 2020, DGCL, and international precedents. I stand ready to apply legal research and strategic analysis to your commercial interests. How may I guide your Board today?`,
         isUser: false,
-        reference_id: "GCC-INIT",
+        reference_id: "LAW-INIT",
         timestamp: new Date().toISOString(),
       }]);
     }
@@ -564,7 +564,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
             </div>
           </div>
           <p className="text-[10px] text-center mt-2 text-[var(--foreground-muted)]">
-            GCC-SAE AI Advisory • Supports PDF, Images & Text • Not a substitute for human counsel.
+            Law Suite AI Advisory • Supports PDF, Images & Text • Not a substitute for human counsel.
           </p>
         </div>
       </div>

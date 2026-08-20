@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GCC-SAE Backend API Testing Suite
+Law Suite Backend API Testing Suite
 Tests all backend endpoints for the legal advisory platform
 """
 
@@ -12,9 +12,9 @@ from datetime import datetime
 import io
 from typing import Dict, Any, List, Optional
 
-class GCCSAEAPITester:
+class LawSuiteAPITester:
     def __init__(self):
-        self.base_url = os.environ.get("GCC_SAE_API_URL", "http://127.0.0.1:8001/api")
+        self.base_url = os.environ.get("LAW_SUITE_API_URL", "http://127.0.0.1:8001/api")
         self.run_live_ai_tests = os.environ.get("RUN_LIVE_AI_TESTS", "false").lower() in {"1", "true", "yes"}
         self.tests_run = 0
         self.tests_passed = 0
@@ -47,7 +47,7 @@ class GCCSAEAPITester:
             response = requests.get(f"{self.base_url}/", timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                success = "GCC-SAE API" in data.get("message", "")
+                success = "Law Suite API" in data.get("message", "")
                 self.log_result("API Health Check", success, f"Response: {data}")
                 return success
             else:
@@ -162,7 +162,7 @@ class GCCSAEAPITester:
             
         try:
             # Create a test file
-            test_content = b"This is a test legal document for GCC-SAE testing purposes."
+            test_content = b"This is a test legal document for Law Suite testing purposes."
             test_file = io.BytesIO(test_content)
             test_file.name = "test_legal_document.txt"
             
@@ -578,7 +578,7 @@ class GCCSAEAPITester:
 
     def run_all_tests(self):
         """Run all backend API tests"""
-        print("🔍 Starting GCC-SAE Backend API Tests...")
+        print("🔍 Starting Law Suite Backend API Tests...")
         print(f"🌐 Testing API at: {self.base_url}")
         print("=" * 60)
         
@@ -641,7 +641,7 @@ class GCCSAEAPITester:
 
 def main():
     """Main function to run backend tests"""
-    tester = GCCSAEAPITester()
+    tester = LawSuiteAPITester()
     passed, total, results = tester.run_all_tests()
     
     # Return appropriate exit code

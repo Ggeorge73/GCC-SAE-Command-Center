@@ -1,14 +1,14 @@
-# GCC-SAE
+# Law Suite
 
 **An enterprise legal-AI workspace with an administration layer for adoption, governance, and measurable value.**
 
-**Live portfolio demo:** [GCC Control Center](https://ggeorge73.github.io/GCC-SAE-Command-Center/)
+**Live portfolio demo:** [Law Suite Control Center](https://ggeorge73.github.io/Law-Suite/)
 
-GCC-SAE started as a cross-border legal advisory and document workspace. This portfolio version adds a second product surface—the **GCC Control Center**—for the people responsible for operating legal AI across a firm or legal department.
+Law Suite started as a cross-border legal advisory and document workspace. This portfolio version adds a second product surface—the **Law Suite Control Center**—for the people responsible for operating legal AI across a firm or legal department.
 
 The product thesis is simple: provisioning access is not the same as creating value. Enterprise administrators need to know whether teams are adopting AI, whether use is becoming more sophisticated, where governance is exposed, and what intervention to make next.
 
-> **Portfolio disclosure:** GCC-SAE is an independent product concept and is not affiliated with Harvey AI or any law firm. Control Center metrics and identities are synthetic, clearly labeled sample data. No customer or employer information is represented.
+> **Portfolio disclosure:** Law Suite is an independent product concept and is not affiliated with Harvey AI or any law firm. Control Center metrics and identities are synthetic, clearly labeled sample data. No customer or employer information is represented.
 
 ## Product surfaces
 
@@ -22,7 +22,7 @@ The existing practitioner experience supports:
 - Jurisdiction-specific compliance checklists
 - Matter-level audit history
 
-### 2. GCC Control Center
+### 2. Law Suite Control Center
 
 The new administrator experience answers four operating questions:
 
@@ -65,7 +65,7 @@ The dashboard is therefore not optimized for the number of charts. It is optimiz
 
 ## AI-assisted product development
 
-GCC-SAE was built through an AI-assisted product-development workflow. AI accelerated exploration, implementation, refactoring, documentation, and verification; the product direction, prioritization, metric model, governance boundaries, acceptance criteria, and release decisions were human-led.
+Law Suite was built through an AI-assisted product-development workflow. AI accelerated exploration, implementation, refactoring, documentation, and verification; the product direction, prioritization, metric model, governance boundaries, acceptance criteria, and release decisions were human-led.
 
 The repository preserves its Git history and does not claim that every scaffolded line was handwritten. The portfolio evidence is the ability to turn a broad prototype into a coherent enterprise product, remove proprietary runtime coupling, define trustworthy operating metrics, validate the implementation, and deliver a public release. The complete working method and contribution boundaries are documented in [`docs/AI_ASSISTED_DEVELOPMENT.md`](docs/AI_ASSISTED_DEVELOPMENT.md).
 
@@ -127,7 +127,7 @@ Open `http://localhost:3000`. The portfolio opens on **Control Center**; the ori
 
 Every push and pull request runs two independent checks before a `main` build can be deployed:
 
-- **Backend integration:** starts FastAPI against a disposable MongoDB service and exercises health, deal-room creation, jurisdiction checklists, document upload, advisory fallback behavior, audit history, statistics, and cleanup. CI uses `GCC_SAE_AI_MODE=offline` so the suite is deterministic and does not require a production AI credential. Live Gemini checks remain available with `RUN_LIVE_AI_TESTS=true`.
+- **Backend integration:** starts FastAPI against a disposable MongoDB service and exercises health, deal-room creation, jurisdiction checklists, document upload, advisory fallback behavior, audit history, statistics, and cleanup. CI uses `LAW_SUITE_AI_MODE=offline` so the suite is deterministic and does not require a production AI credential. Live Gemini checks remain available with `RUN_LIVE_AI_TESTS=true`.
 - **Control Center browser tests:** launches the React application in Chromium and verifies the portfolio disclosure, adoption and timeframe filters, deployment insights, identity search and role filters, recommendation activation, and CSV export.
 
 The GitHub Pages artifact is built and deployed only after both jobs pass. Failed browser runs retain a Playwright HTML report, screenshots, video, and traces for diagnosis.
@@ -143,7 +143,7 @@ npm run test:e2e
 Run the backend integration harness against a configured local API:
 
 ```bash
-GCC_SAE_API_URL=http://127.0.0.1:8001/api python backend_test.py
+LAW_SUITE_API_URL=http://127.0.0.1:8001/api python backend_test.py
 ```
 
 ## Current maturity

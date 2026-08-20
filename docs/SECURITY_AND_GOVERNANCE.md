@@ -2,7 +2,7 @@
 
 ## Purpose
 
-GCC-SAE handles workflows that could contain privileged legal work and highly sensitive enterprise documents. The current repository is a portfolio prototype, not a secure production system. This document makes that boundary explicit and defines the controls required before real use.
+Law Suite handles workflows that could contain privileged legal work and highly sensitive enterprise documents. The current repository is a portfolio prototype, not a secure production system. This document makes that boundary explicit and defines the controls required before real use.
 
 ## Current-state assessment
 
