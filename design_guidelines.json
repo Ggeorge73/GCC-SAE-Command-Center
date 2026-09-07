@@ -95,7 +95,7 @@
         "main_area": "flex flex-col flex-1 h-full overflow-hidden bg-[#0a1628]",
         "three_pane": "grid grid-cols-1 lg:grid-cols-12 h-full",
         "chat_pane": "lg:col-span-8 flex flex-col h-full relative",
-        "vault_pane": "lg:col-span-4 border-l border-[#1e3a66] bg-[#0f1f38]/50 h-full overflow-y-auto hidden lg:block"
+        "records_pane": "lg:col-span-4 border-l border-[#1e3a66] bg-[#0f1f38]/50 h-full overflow-y-auto hidden lg:block"
       }
     }
   },
@@ -162,7 +162,7 @@
     "Do not use rounded corners larger than 'rounded-md'. Keep it professional and sharp.",
     "Always add 'data-testid' to interactive elements.",
     "Use 'sonner' for toast notifications.",
-    "For the Document Vault, use a grid layout with card previews.",
+    "For the Document Records, use a grid layout with card previews.",
     "Chat interface should feel like a high-end encrypted messaging app (e.g., Signal meets Bloomberg Terminal).",
     "Sidebar must look like a legal case file list - structured and dense."
   ]

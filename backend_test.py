@@ -191,9 +191,9 @@ class LawSuiteAPITester:
                 expected_fields = ["id", "file_name", "file_hash", "storage_path", "indexing_status"]
                 missing_fields = [f for f in expected_fields if f not in upload_result]
                 
-                if not missing_fields and upload_result.get("indexing_status") == "indexed":
+                if not missing_fields and upload_result.get("indexing_status") == "stored":
                     self.log_result("Document Upload", True, 
-                                    f"Document uploaded and indexed. Hash: {upload_result.get('file_hash', '')[:8]}...")
+                                    f"Document stored without claiming analysis. Hash: {upload_result.get('file_hash', '')[:8]}...")
                     return True
                 else:
                     self.log_result("Document Upload", False, 
@@ -237,249 +237,29 @@ class LawSuiteAPITester:
             return False
 
     def test_ai_fallback_contract(self) -> bool:
-        """Verify deterministic advisory behavior without external AI credentials."""
-        test_cases = [
-            {
-                "jurisdiction": "NIGERIA (CAMA 2020)",
-                "message": "What does CAMA 2020 require for a Nigerian company?",
-                "expected": ["CAMA 2020", "Section 18", "AI service temporarily unavailable"],
-            },
-            {
-                "jurisdiction": "US (DELAWARE DGCL)",
-                "message": "Explain DGCL Section 141(a) for a Delaware board.",
-                "expected": ["DGCL", "Section 141", "AI service temporarily unavailable"],
-            },
-        ]
-
-        successful_cases = 0
-        for test_case in test_cases:
-            try:
-                response = requests.post(
-                    f"{self.base_url}/chat",
-                    json={
-                        "deal_room_id": self.created_deal_room_id,
-                        "message": test_case["message"],
-                        "jurisdiction": test_case["jurisdiction"],
-                    },
-                    timeout=10,
-                )
-                if response.status_code != 200:
-                    continue
-
-                payload = response.json()
-                response_text = payload.get("response", "")
-                has_contract = all(value in response_text for value in test_case["expected"])
-                has_reference = bool(payload.get("reference_id")) and "REF:" in response_text
-                has_jurisdiction = payload.get("jurisdiction") == test_case["jurisdiction"]
-                if has_contract and has_reference and has_jurisdiction:
-                    successful_cases += 1
-            except Exception:
-                continue
-
-        success = successful_cases == len(test_cases)
-        self.log_result(
-            "AI Fallback Contract",
-            success,
-            f"{successful_cases}/{len(test_cases)} deterministic jurisdiction responses passed",
-        )
+        """Offline HTTP responses must be service notices, never substituted legal opinions."""
+        response = requests.post(f"{self.base_url}/chat", json={"deal_room_id": self.created_deal_room_id, "message": "Synthetic research question", "jurisdiction": "US (DELAWARE DGCL)"}, timeout=10)
+        body = response.json()
+        success = response.status_code == 200 and body.get("status") == "unavailable" and body.get("sources_verified") is False and "No legal answer was generated" in body.get("response", "")
+        self.log_result("AI Unavailable Contract", success, "HTTP contract is explicit; no canned legal opinion")
         return success
-            
+
     def test_ai_chat_real_gemini(self) -> bool:
-        """Test AI chat with real Gemini 2.5 Pro responses (not mocked)"""
+        """Provider contract smoke test only; does not evaluate legal correctness."""
         try:
-            # Test real AI with specific legal questions that should get real responses
-            test_messages = [
-                {
-                    "message": "What are the key provisions of CAMA 2020 Section 18 regarding minimum share capital?",
-                    "expected_in_response": ["Strategic Advisory", "REF:", "CAMA 2020", "Section 18"],
-                    "should_not_contain": ["cached advisory response", "AI service temporarily unavailable"]
-                },
-                {
-                    "message": "Explain DGCL Section 141(a) and board authority in Delaware corporations",
-                    "expected_in_response": ["Strategic", "REF:", "DGCL", "Section 141"],
-                    "should_not_contain": ["cached advisory response", "AI service temporarily unavailable"]
-                }
-            ]
-            
-            successful_chats = 0
-            real_ai_responses = 0
-            
-            for i, test_case in enumerate(test_messages):
-                chat_data = {
-                    "deal_room_id": self.created_deal_room_id,
-                    "message": test_case["message"],
-                    "jurisdiction": "NIGERIA (CAMA 2020)" if "CAMA" in test_case["message"] else "US (DELAWARE DGCL)"
-                }
-                
-                response = requests.post(f"{self.base_url}/chat", json=chat_data, timeout=30)
-                
-                if response.status_code == 200:
-                    chat_response = response.json()
-                    response_text = chat_response.get("response", "")
-                    
-                    # Check if it's a real AI response (not fallback)
-                    is_real_ai = True
-                    for fallback_indicator in test_case["should_not_contain"]:
-                        if fallback_indicator.lower() in response_text.lower():
-                            is_real_ai = False
-                            break
-                    
-                    if is_real_ai:
-                        real_ai_responses += 1
-                    
-                    # Check if response contains expected elements
-                    elements_found = sum(1 for element in test_case["expected_in_response"] 
-                                        if element in response_text)
-                    
-                    # Verify response structure
-                    has_reference_id = bool(chat_response.get("reference_id"))
-                    has_jurisdiction = bool(chat_response.get("jurisdiction"))
-                    has_strategic_header = "Strategic" in response_text and "REF:" in response_text
-                    
-                    if (elements_found >= 2 and has_reference_id and has_jurisdiction and has_strategic_header):
-                        successful_chats += 1
-                        print(f"   Chat {i+1}: PASS - Elements found: {elements_found}, Real AI: {is_real_ai}, Ref: {chat_response.get('reference_id')}")
-                        print(f"      Response preview: {response_text[:100]}...")
-                    else:
-                        print(f"   Chat {i+1}: FAIL - Elements: {elements_found}, RefID: {has_reference_id}, Jurisdiction: {has_jurisdiction}, Strategic header: {has_strategic_header}")
-                        print(f"      Real AI response: {is_real_ai}")
-                else:
-                    print(f"   Chat {i+1}: FAIL - Status code: {response.status_code}")
-            
-            success = successful_chats >= 2 and real_ai_responses >= 1
-            self.log_result("AI Chat (Real Gemini)", success, 
-                           f"{successful_chats}/{len(test_messages)} chats passed, {real_ai_responses} real AI responses")
+            response = requests.post(f"{self.base_url}/chat", json={
+                "deal_room_id": self.created_deal_room_id,
+                "message": "For a fictional Delaware acquisition, list the facts and source checks needed before researching a consent issue. Do not provide a legal conclusion.",
+                "jurisdiction": "US (DELAWARE DGCL)",
+            }, timeout=60)
+            body = response.json()
+            success = response.status_code == 200 and body.get("status") == "unverified_draft" and body.get("sources_verified") is False and bool(body.get("reference_id")) and "UNVERIFIED RESEARCH DRAFT" in body.get("response", "")
+            self.log_result("Live provider draft contract", success, "Provider availability and draft labeling only; no accuracy claim")
             return success
-            
-        except Exception as e:
-            self.log_result("AI Chat (Real Gemini)", False, f"Error: {str(e)}")
+        except Exception as error:
+            self.log_result("Live provider draft contract", False, type(error).__name__)
             return False
-            
-    def test_multi_turn_conversation(self) -> bool:
-        """Test multi-turn conversation context maintenance"""
-        try:
-            # Test conversation context by asking follow-up questions
-            conversation = [
-                {
-                    "message": "I'm forming a new tech startup in Nigeria. What are the basic CAMA 2020 requirements?",
-                    "expected": ["CAMA 2020", "Nigeria", "tech", "startup"]
-                },
-                {
-                    "message": "What about the share capital requirements we just discussed?", 
-                    "expected": ["share capital", "NGN", "minimum"]
-                },
-                {
-                    "message": "How does this compare to Delaware incorporation?",
-                    "expected": ["Delaware", "compare", "DGCL"]
-                }
-            ]
-            
-            successful_turns = 0
-            session_responses = []
-            
-            for i, turn in enumerate(conversation):
-                chat_data = {
-                    "deal_room_id": self.created_deal_room_id,
-                    "message": turn["message"],
-                    "jurisdiction": "NIGERIA (CAMA 2020)"
-                }
-                
-                response = requests.post(f"{self.base_url}/chat", json=chat_data, timeout=30)
-                
-                if response.status_code == 200:
-                    chat_response = response.json()
-                    response_text = chat_response.get("response", "")
-                    session_responses.append(response_text)
-                    
-                    # Check for expected elements in response
-                    elements_found = sum(1 for element in turn["expected"] 
-                                        if element.lower() in response_text.lower())
-                    
-                    # For follow-up questions, check if there's contextual understanding
-                    if i > 0 and "just discussed" in turn["message"]:
-                        # Should reference previous context
-                        has_context = any(prev_keyword in response_text.lower() 
-                                         for prev_response in session_responses[:-1]
-                                         for prev_keyword in ["capital", "formation", "startup"])
-                    else:
-                        has_context = True
-                    
-                    if elements_found >= 1 and has_context:
-                        successful_turns += 1
-                        print(f"   Turn {i+1}: PASS - Elements: {elements_found}, Context: {has_context}")
-                    else:
-                        print(f"   Turn {i+1}: FAIL - Elements: {elements_found}, Context: {has_context}")
-                else:
-                    print(f"   Turn {i+1}: FAIL - Status code: {response.status_code}")
-            
-            success = successful_turns >= 2
-            self.log_result("Multi-turn Conversation", success, f"{successful_turns}/{len(conversation)} turns successful")
-            return success
-            
-        except Exception as e:
-            self.log_result("Multi-turn Conversation", False, f"Error: {str(e)}")
-            return False
-            
-    def test_jurisdiction_specific_responses(self) -> bool:
-        """Test jurisdiction-specific AI responses"""
-        try:
-            jurisdiction_tests = [
-                {
-                    "jurisdiction": "NIGERIA (CAMA 2020)",
-                    "message": "What are the key regulatory bodies I need to comply with?",
-                    "expected_citations": ["CAMA 2020", "CAC", "SEC Nigeria", "NOTAP"],
-                    "expected_sections": ["Section"]
-                },
-                {
-                    "jurisdiction": "US (DELAWARE DGCL)", 
-                    "message": "What are the key regulatory requirements for corporations?",
-                    "expected_citations": ["DGCL", "Delaware", "SEC", "Rule"],
-                    "expected_sections": ["Section"]
-                }
-            ]
-            
-            successful_jurisdictions = 0
-            
-            for test in jurisdiction_tests:
-                chat_data = {
-                    "deal_room_id": self.created_deal_room_id,
-                    "message": test["message"],
-                    "jurisdiction": test["jurisdiction"]
-                }
-                
-                response = requests.post(f"{self.base_url}/chat", json=chat_data, timeout=30)
-                
-                if response.status_code == 200:
-                    chat_response = response.json()
-                    response_text = chat_response.get("response", "")
-                    
-                    # Check for jurisdiction-specific citations
-                    citations_found = sum(1 for citation in test["expected_citations"] 
-                                         if citation in response_text)
-                    
-                    # Check for legal section references
-                    sections_found = sum(1 for section in test["expected_sections"]
-                                        if section in response_text)
-                    
-                    # Verify jurisdiction context matches
-                    correct_jurisdiction = chat_response.get("jurisdiction") == test["jurisdiction"]
-                    
-                    if citations_found >= 2 and sections_found >= 1 and correct_jurisdiction:
-                        successful_jurisdictions += 1
-                        print(f"   {test['jurisdiction']}: PASS - Citations: {citations_found}, Sections: {sections_found}")
-                    else:
-                        print(f"   {test['jurisdiction']}: FAIL - Citations: {citations_found}, Sections: {sections_found}, Correct jurisdiction: {correct_jurisdiction}")
-                else:
-                    print(f"   {test['jurisdiction']}: FAIL - Status code: {response.status_code}")
-            
-            success = successful_jurisdictions >= 2
-            self.log_result("Jurisdiction-Specific Responses", success, f"{successful_jurisdictions}/{len(jurisdiction_tests)} jurisdictions passed")
-            return success
-            
-        except Exception as e:
-            self.log_result("Jurisdiction-Specific Responses", False, f"Error: {str(e)}")
-            return False
-            
+
     def test_audit_trail(self) -> bool:
         """Test audit trail endpoint"""
         if not self.created_deal_room_id:
@@ -595,8 +375,6 @@ class LawSuiteAPITester:
         if self.run_live_ai_tests:
             test_sequence.extend([
                 self.test_ai_chat_real_gemini,
-                self.test_multi_turn_conversation,
-                self.test_jurisdiction_specific_responses,
             ])
         else:
             test_sequence.append(self.test_ai_fallback_contract)

@@ -1,5 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -15,6 +14,10 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import base64
+try:
+    from .research_safety import get_research_prompt, unavailable_response
+except ImportError:
+    from research_safety import get_research_prompt, unavailable_response
 
 # Load environment variables FIRST
 ROOT_DIR = Path(__file__).parent
@@ -28,7 +31,7 @@ db = client[os.environ['DB_NAME']]
 # LLM Configuration
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro')
-LAW_SUITE_AI_MODE = os.environ.get('LAW_SUITE_AI_MODE', 'live').lower()
+LAW_SUITE_AI_MODE = os.environ.get('LAW_SUITE_AI_MODE', 'offline').lower()
 genai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and LAW_SUITE_AI_MODE == 'live' else None
 
 # Create the main app
@@ -37,8 +40,20 @@ app = FastAPI(title="Law Suite API", description="Enterprise legal advisory and 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Security
-security = HTTPBearer(auto_error=False)
+@app.middleware("http")
+async def require_local_demo_opt_in(request: Request, call_next):
+    """Fail closed until real authentication and matter authorization are implemented.
+
+    The opt-in is exclusively for isolated, loopback-only synthetic-data development.
+    It is not authentication and must not be exposed through a public reverse proxy.
+    """
+    from starlette.responses import JSONResponse
+    if request.url.path.startswith("/api") and request.url.path not in {"/api", "/api/"}:
+        if os.environ.get("LAW_SUITE_ALLOW_LOCAL_DEMO", "false").lower() != "true":
+            return JSONResponse(status_code=503, content={"detail": "Data endpoints are disabled until authentication is implemented. Local synthetic-data development requires explicit LAW_SUITE_ALLOW_LOCAL_DEMO=true."})
+        if not request.client or request.client.host not in {"127.0.0.1", "::1", "testclient"}:
+            return JSONResponse(status_code=403, content={"detail": "The unauthenticated prototype is restricted to local development."})
+    return await call_next(request)
 
 # Configure logging
 logging.basicConfig(
@@ -52,8 +67,8 @@ logger = logging.getLogger(__name__)
 class DealRoom(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    jurisdiction: str = "NIGERIA (CAMA 2020)"
+    name: str = Field(min_length=1, max_length=250)
+    jurisdiction: str = "US (DELAWARE DGCL)"
     total_raise: Optional[str] = None
     primary_counsel: Optional[str] = None
     status: str = "active"
@@ -61,8 +76,8 @@ class DealRoom(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DealRoomCreate(BaseModel):
-    name: str
-    jurisdiction: str = "NIGERIA (CAMA 2020)"
+    name: str = Field(min_length=1, max_length=250)
+    jurisdiction: str = "US (DELAWARE DGCL)"
     total_raise: Optional[str] = None
     primary_counsel: Optional[str] = None
 
@@ -128,11 +143,13 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     deal_room_id: Optional[str] = None
-    message: str
-    jurisdiction: str = "NIGERIA (CAMA 2020)"
+    message: str = Field(min_length=1, max_length=20000)
+    jurisdiction: str = "US (DELAWARE DGCL)"
 
 class ChatResponse(BaseModel):
     response: str
+    status: str = "unverified_draft"
+    sources_verified: bool = False
     reference_id: str
     jurisdiction: str
     timestamp: datetime
@@ -144,60 +161,8 @@ def compute_file_hash(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 def get_law_suite_system_prompt(jurisdiction: str, context_docs: List[str] = None) -> str:
-    """Generate the Law Suite system prompt based on jurisdiction."""
-    docs_context = ""
-    if context_docs and len(context_docs) > 0:
-        docs_context = f"\n\nDocuments available in the Vault for reference:\n- " + "\n- ".join(context_docs)
-    
-    return f"""You are the Law Suite Legal Advisor, a premier Legal and Strategic Consultant. Your cognitive architecture is modeled after a practitioner with 30+ years of robust experience in cross-border corporate-commercial transactions.
+    return get_research_prompt(jurisdiction, context_docs or [])
 
-Your expertise exceeds the combined legal acumen of a British King's Counsel (KC), a Senior Advocate of Nigeria (SAN), and a Senior Partner at top-tier firms (Latham & Watkins, Kirkland & Ellis, Skadden Arps).
-
-CORE SKILLSET & KNOWLEDGE BASE:
-- Jurisdictional Mastery: Expert-level fluency in US Federal/State law (Delaware DGCL), English Common Law, and Nigerian Corporate Law (CAMA 2020, Investment & Securities Act).
-- Transaction Specialization: Master of M&A, Private Equity, Project Finance, Venture Capital, and Carbon Credit Trading structures.
-- Risk Arbitrage: Ability to identify "silent" liabilities in complex cross-border contracts that standard LLMs or junior associates would miss.
-- Strategic Communication: Speak with gravitas, precision, and economy of a Senior Partner. Provide "Executive Ready" advice—not just legal summaries, but strategic recommendations.
-
-CURRENT JURISDICTION CONTEXT: {jurisdiction}
-
-KEY LEGAL FRAMEWORKS TO APPLY:
-1. NIGERIA (CAMA 2020):
-   - Companies and Allied Matters Act 2020
-   - Investment & Securities Act 2007
-   - Nigerian Investment Promotion Commission Act
-   - NOTAP Act (technology transfer agreements)
-   - CBN regulations for forex transactions
-   - SEC Nigeria rules for private placements
-
-2. US (DELAWARE DGCL):
-   - Delaware General Corporation Law
-   - Securities Act of 1933 / Exchange Act of 1934
-   - Regulation D exemptions (Rule 506(b), 506(c))
-   - State Blue Sky laws
-   - Business judgment rule (Aronson v. Lewis)
-
-3. UK (Companies Act 2006):
-   - Companies Act 2006
-   - FCA regulatory framework
-   - UK Takeover Code
-
-OPERATIONAL DIRECTIVES:
-1. Precision Over Prolixity: Be concise. Never use three words where one will do.
-2. Cite Specific Laws: Reference specific sections (e.g., "Section 18 of CAMA 2020", "DGCL Section 141(a)").
-3. Proactive Compliance: Automatically flag potential regulatory hurdles based on transaction geography.
-4. Risk Identification: Highlight potential "silent" liabilities or overlooked issues.
-5. Strategic Recommendations: End with actionable next steps for the Board/Counsel.
-
-RESPONSE FORMAT:
-- Start with a **Strategic Directive** or **Legal Opinion** header with reference ID
-- Use numbered points for key considerations
-- Bold key legal terms and sections
-- Include a **Recommendation** section with action items
-- Note any documents referenced from the Vault
-{docs_context}
-
-Remember: You are advising sophisticated corporate clients. Your advice carries weight and must be legally sound while remaining commercially practical."""
 
 # ============== DEAL ROOMS ENDPOINTS ==============
 
@@ -330,15 +295,17 @@ async def get_compliance_checklists(deal_room_id: str):
 @api_router.put("/compliance-checklists/{checklist_id}")
 async def update_compliance_checklist(checklist_id: str, status: str = Form(...)):
     """Update compliance checklist status"""
+    if status not in {"pending", "compliant", "overdue"}:
+        raise HTTPException(status_code=422, detail="Invalid checklist status")
     result = await db.compliance_checklists.update_one(
         {"id": checklist_id},
         {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Checklist not found")
     return {"message": "Checklist updated", "status": status}
 
-# ============== DOCUMENT VAULT ENDPOINTS ==============
+# ============== DOCUMENT RECORDS ENDPOINTS ==============
 
 @api_router.post("/documents/upload")
 async def upload_document(
@@ -350,12 +317,24 @@ async def upload_document(
     download_url: Optional[str] = Form(default=None),
     file_hash: Optional[str] = Form(default=None)
 ):
-    """Upload a document to the vault with metadata indexing"""
-    content = await file.read()
-    
-    # Use provided hash or compute one
-    if not file_hash:
-        file_hash = compute_file_hash(content)
+    """Upload a document to document records with metadata indexing"""
+    if not await db.deal_rooms.find_one({"id": deal_room_id}, {"_id": 0, "id": 1}):
+        raise HTTPException(status_code=404, detail="Matter not found")
+    if folder not in {"Legal_Drafts", "Due_Diligence", "CBRNE_Technical", "KYC_Docs"}:
+        raise HTTPException(status_code=422, detail="Unsupported document folder")
+    if access_level not in {"Team", "Admin Only"}:
+        raise HTTPException(status_code=422, detail="Public document access is not supported")
+    if download_url or storage_path:
+        raise HTTPException(status_code=422, detail="External storage registration is disabled until authorized storage is implemented")
+    content = await file.read(10 * 1024 * 1024 + 1)
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Prototype upload limit is 10 MiB")
+    if not content:
+        raise HTTPException(status_code=422, detail="Empty documents are not supported")
+    computed_hash = compute_file_hash(content)
+    if file_hash and file_hash != computed_hash:
+        raise HTTPException(status_code=422, detail="Document integrity hash does not match the uploaded bytes")
+    file_hash = computed_hash
     
     # Use provided storage path or create default
     if not storage_path:
@@ -371,7 +350,7 @@ async def upload_document(
         file_hash=file_hash,
         access_level=access_level,
         storage_path=storage_path,
-        indexing_status="processing"
+        indexing_status="stored"
     )
     
     doc = doc_metadata.model_dump()
@@ -385,22 +364,14 @@ async def upload_document(
     
     await db.documents.insert_one(doc)
     
-    # Update indexing status to complete
-    await db.documents.update_one(
-        {"id": doc_metadata.id},
-        {"$set": {
-            "indexing_status": "indexed",
-            "indexed_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
-    
+    # Storage is not extraction, indexing, or source verification.
     return {
         "id": doc_metadata.id,
         "file_name": doc_metadata.file_name,
         "file_hash": doc_metadata.file_hash,
         "storage_path": storage_path,
         "download_url": download_url,
-        "indexing_status": "indexed"
+        "indexing_status": "stored"
     }
 
 @api_router.get("/documents/{deal_room_id}")
@@ -446,7 +417,7 @@ async def get_documents(deal_room_id: str, folder: Optional[str] = None):
 
 @api_router.get("/documents/download/{document_id}")
 async def download_document(document_id: str):
-    """Download a document from the vault"""
+    """Download a document from document records"""
     doc = await db.documents.find_one({"id": document_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -459,7 +430,7 @@ async def download_document(document_id: str):
 
 @api_router.delete("/documents/{document_id}")
 async def delete_document(document_id: str):
-    """Delete a document from the vault"""
+    """Delete a document from document records"""
     result = await db.documents.delete_one({"id": document_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -467,50 +438,47 @@ async def delete_document(document_id: str):
 
 # ============== CHAT / ADVISORY ENDPOINT ==============
 
-# Store for chat sessions (in production, use Redis or database)
-chat_sessions: Dict[str, Any] = {}
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_advocate(request: ChatRequest):
     """Chat with the Law Suite Legal Advisor powered by Gemini."""
     reference_id = f"LAW-{uuid.uuid4().hex[:8].upper()}"
     
-    # Get relevant documents for context if deal_room_id provided
+    # Only a filename inventory is available, not source text.
+    if request.deal_room_id and not await db.deal_rooms.find_one({"id": request.deal_room_id}, {"_id": 0, "id": 1}):
+        raise HTTPException(status_code=404, detail="Matter not found")
+    # Get document metadata when a matter is supplied
     context_docs = []
     if request.deal_room_id:
         docs = await db.documents.find(
-            {"deal_room_id": request.deal_room_id, "indexing_status": "indexed"},
+            {"deal_room_id": request.deal_room_id},
             {"_id": 0, "file_name": 1, "folder": 1}
         ).to_list(10)
         context_docs = [f"{d['folder']}/{d['file_name']}" for d in docs]
     
-    # Generate session ID based on deal room or create new
-    session_id = request.deal_room_id or f"global-{uuid.uuid4().hex[:8]}"
+    response_status = "unverified_draft"
     
     try:
         if genai_client is None:
             raise RuntimeError("Gemini is unavailable or LAW_SUITE_AI_MODE is offline")
 
-        # Create or retrieve a direct Google Gen AI chat session.
-        if session_id not in chat_sessions:
-            system_prompt = get_law_suite_system_prompt(request.jurisdiction, context_docs)
-            chat = genai_client.aio.chats.create(
-                model=GEMINI_MODEL,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    temperature=0.2,
-                ),
-            )
-            chat_sessions[session_id] = chat
-        else:
-            chat = chat_sessions[session_id]
+        # Request-scoped chat prevents cross-user or stale-jurisdiction history reuse.
+        chat = genai_client.aio.chats.create(
+            model=GEMINI_MODEL,
+            config=types.GenerateContentConfig(
+                system_instruction=get_law_suite_system_prompt(request.jurisdiction, context_docs),
+                temperature=0.2,
+            ),
+        )
 
         # Get AI response
         ai_result = await chat.send_message(request.message)
         ai_response = ai_result.text or ""
+        if not ai_response.strip():
+            raise RuntimeError("Empty model response")
         
         # Format response with proper header and reference at top
-        formatted_response = f"""**STRATEGIC ADVISORY**
+        formatted_response = f"""**UNVERIFIED RESEARCH DRAFT — LAWYER REVIEW REQUIRED**
 **REF:** {reference_id}
 **JURISDICTION:** {request.jurisdiction}
 **DATE:** {datetime.now(timezone.utc).strftime('%d %B %Y')}
@@ -519,22 +487,23 @@ async def chat_with_advocate(request: ChatRequest):
 
 {ai_response}"""
         
-        # Add document context if available
+        # Explicitly identify the limits of the supplied inventory
         if context_docs:
-            formatted_response += f"\n\n---\n*Documents referenced from Vault: {', '.join(context_docs)}*"
+            formatted_response += f"\n\n---\n*Filename inventory only (contents not analyzed): {', '.join(context_docs)}*"
         
         response = formatted_response
         
     except Exception as e:
-        logger.error(f"Gemini API error: {e}")
-        # Fallback to intelligent mock response if API fails
+        logger.warning("Research service unavailable (%s)", type(e).__name__)
+        response_status = "unavailable"
+        # Never substitute canned legal advice for a failed model request
         response = generate_fallback_response(request.message, request.jurisdiction, context_docs, reference_id)
     
     # Log the advisory
     if request.deal_room_id:
         log = AdvisoryLog(
             deal_room_id=request.deal_room_id,
-            type="legal_opinion",
+            type="research_draft" if response_status == "unverified_draft" else "service_notice",
             content=response,
             prompt_used=request.message,
             jurisdiction_context=request.jurisdiction
@@ -545,6 +514,7 @@ async def chat_with_advocate(request: ChatRequest):
     
     return ChatResponse(
         response=response,
+        status=response_status,
         reference_id=reference_id,
         jurisdiction=request.jurisdiction,
         timestamp=datetime.now(timezone.utc)
@@ -552,87 +522,7 @@ async def chat_with_advocate(request: ChatRequest):
 
 
 def generate_fallback_response(query: str, jurisdiction: str, context_docs: List[str], reference_id: str) -> str:
-    """Generate intelligent fallback response if AI API fails"""
-    query_lower = query.lower()
-    
-    if "cama" in query_lower or "nigeria" in query_lower:
-        return f"""**Strategic Directive (REF: {reference_id})**
-
-Under CAMA 2020, the following considerations apply to your query:
-
-1. **Corporate Structure**: Section 18 requires minimum share capital of NGN 100,000 for private companies. For cross-border transactions, consider a holding structure with Delaware Parent and Nigerian OpCo.
-
-2. **Regulatory Filings**: CAC annual returns must be filed within 42 days of AGM. Non-compliance attracts penalties under Section 423.
-
-3. **Foreign Investment**: NOTAP registration is mandatory for technology transfer agreements. Failure to register renders agreements unenforceable.
-
-**Recommendation**: Engage local counsel for SEC Nigeria notification if raising capital from more than 50 investors.
-
-*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*
-
-*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
-    
-    elif "delaware" in query_lower or "dgcl" in query_lower or "us" in query_lower:
-        return f"""**Legal Opinion (REF: {reference_id})**
-
-Under Delaware General Corporation Law:
-
-1. **Formation**: DGCL Section 102(a) permits broad purpose clauses. Standard "any lawful business" language recommended.
-
-2. **Board Authority**: Section 141(a) vests management in the board. Shareholder agreements cannot materially restrict board discretion.
-
-3. **Fiduciary Duties**: Directors owe duties of care and loyalty. Business judgment rule provides substantial protection under Aronson v. Lewis.
-
-**Cross-Border Consideration**: For Nigerian operations, structure as Delaware Parent → Nigerian Sub. This preserves Delaware flexibility while ensuring CAMA compliance.
-
-*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*
-
-*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
-    
-    elif "m&a" in query_lower or "acquisition" in query_lower or "merger" in query_lower:
-        return f"""**Strategic Directive (REF: {reference_id})**
-
-For cross-border M&A involving Nigeria and US entities:
-
-1. **Structure Options**:
-   - Stock-for-stock merger (tax-free reorganization under IRC 368)
-   - Asset purchase (cleaner separation, higher tax friction)
-   - Reverse triangular merger (preserve target contracts)
-
-2. **Nigerian Regulatory Approvals**:
-   - SEC Nigeria approval for transactions >NGN 500M
-   - CBN approval for foreign exchange remittances
-   - FCCPC merger notification thresholds apply
-
-3. **Due Diligence Priority**:
-   - Land titles (verify Governor's Consent)
-   - Employment obligations (NSITF, ITF contributions)
-   - Environmental permits
-
-**Timeline**: Allow 90-120 days for Nigerian regulatory approvals.
-
-*Documents referenced: {', '.join(context_docs) if context_docs else 'None in vault'}*
-
-*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
-    
-    else:
-        return f"""**Advisory Response (REF: {reference_id})**
-
-I am the Law Suite Legal Advisor, ready to apply the full weight of legal expertise to your commercial interests.
-
-**Available Advisory Services**:
-- Cross-border transaction structuring (Nigeria/US/UK)
-- Regulatory compliance mapping (SEC, CBN, CAC, UK FCA)
-- Due diligence coordination and risk analysis
-- Contract review for "silent" liabilities
-- Corporate governance advisory
-
-*Current jurisdiction context: {jurisdiction}*
-*Documents in vault: {len(context_docs)} indexed*
-
-Please provide more details about your specific legal query, and I will deliver executive-ready advice.
-
-*Note: AI service temporarily unavailable. This is a cached advisory response.*"""
+    return unavailable_response(reference_id)
 
 # ============== AUDIT TRAIL ==============
 
@@ -693,8 +583,8 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_credentials=False,
+    allow_origins=[origin.strip() for origin in os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',') if origin.strip() and origin.strip() != '*'],
     allow_methods=["*"],
     allow_headers=["*"],
 )
