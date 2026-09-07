@@ -8,6 +8,10 @@ The starting product was a portfolio prototype, not a production alternative to 
 
 ## Harvey's documented offering
 
+Updated September 7, 2026 after the attorney walkthrough. [Harvey II, announced August 18](https://www.harvey.ai/blog/introducing-harvey-ii), describes inherited matter documents, parties, permissions, task routing, and memory. [Agents](https://www.harvey.ai/platform/agents) describes approval, citations, and logged steps; [Contract Intelligence](https://www.harvey.ai/platform/contract-intelligence) describes queues, assignments, playbooks, and obligations. Human review, matter context, and assignments therefore belong to the competitive baseline. Vendor-neutral review, source-change impact, and faster exception resolution remain hypotheses to evaluate, not established exclusive features.
+
+The second demo iteration implements the attorney feedback: persistent decision drafts, notes/assignments on blocked findings, explicit exclusions, participant-stamped prerequisites, source comparisons that reopen dependent reviews, a connected working draft, reference-only text intake, internal target assumptions, and an exportable review memorandum. A layered dashboard and progress cards expose actual demo state; Firm Operations moves under Administration. These behaviors operate on fictional browser-local fixtures. They do not demonstrate legal AI accuracy, verified authorities, a Word add-in, real provider integrations, or server-enforced approvals.
+
 This is a comparison of public vendor descriptions, not hands-on access to a paid deployment or a benchmark of legal accuracy. An undocumented feature must not be assumed absent.
 
 | Publicly documented capability | Implication for Law Suite |
@@ -45,7 +49,7 @@ This is a comparison of public vendor descriptions, not hands-on access to a pai
 | Medium | Access-review buttons did nothing | Buttons record sample review state and disclose that permissions are unchanged. Durable access workflows remain required. |
 | Medium | Arbitrary checklist statuses; unchanged update could report not found | Status validation and matched-count existence checks added. Checklist templates remain examples, not compliance determinations. |
 | Medium | Hash failure in Firebase helper silently returned a timestamp | Dormant helper now stops when hashing fails. |
-| Medium | Activity aggregation could be mistaken for an immutable audit | New review export is explicitly a session record; backend activity remains a mutable aggregation. |
+| Medium | Activity aggregation could be mistaken for an immutable audit | Review export is explicitly an editable browser-local demo record; backend activity remains a mutable aggregation. |
 | Medium | Large dependency scaffold and older build architecture | Builds/tests are checked; modernization and dependency reduction remain planned. No comprehensive vulnerability audit is claimed. |
 
 ## Difficult US firm workflows to prioritize
