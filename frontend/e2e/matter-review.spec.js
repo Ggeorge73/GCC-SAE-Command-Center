@@ -10,7 +10,7 @@ test("opens an independent Law Suite review experience without legacy product na
 }) => {
   await expect(page).toHaveTitle("Law Suite | Evidence before delivery");
   await expect(
-    page.getByRole("heading", { name: "Know what stands behind your work." }),
+    page.getByRole("heading", { name: "Your matters, in motion." }),
   ).toBeVisible();
   await expect(page.getByText("Interactive demonstration")).toBeVisible();
   await expect(
@@ -55,7 +55,9 @@ test("requires documented review, preserves it across sections, and recalculates
   page,
 }) => {
   await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
-  await page.getByLabel("Reviewer name").fill("Demo reviewer");
+  await page
+    .getByLabel("Simulated participant")
+    .selectOption("Maya Chen · Partner");
   await page.getByLabel("Review note").fill("short");
   await expect(
     page.getByRole("button", { name: "Record review", exact: true }),
@@ -82,6 +84,8 @@ test("requires documented review, preserves it across sections, and recalculates
     .getByRole("button", { name: "Record review", exact: true })
     .click();
   await page.getByRole("tab", { name: "Handoff requirements" }).click();
+  await page.getByLabel("Client AI-use terms reviewed").check();
+  await page.getByLabel("Matter team and sharing scope confirmed").check();
   await expect(
     page.getByRole("heading", { name: "Ready for supervising lawyer review" }),
   ).toBeVisible();
@@ -90,6 +94,7 @@ test("requires documented review, preserves it across sections, and recalculates
     page.getByRole("heading", { name: "Handoff is blocked" }),
   ).toBeVisible();
   await page.getByLabel("Client AI-use terms reviewed").check();
+  await page.getByText("Administration", { exact: true }).click();
   await page
     .getByRole("button", { name: "Firm Operations", exact: true })
     .click();
@@ -101,7 +106,7 @@ test("requires documented review, preserves it across sections, and recalculates
   ).toBeVisible();
   await page.getByRole("tab", { name: "Decision history" }).click();
   await expect(page.getByRole("tabpanel")).toContainText(
-    "Demo reviewer recorded review of M1",
+    "Maya Chen · Partner recorded review of M1",
   );
   await page.getByRole("tab", { name: /Issues & evidence/ }).click();
   await page.getByRole("button", { name: "Reopen review" }).click();
@@ -114,7 +119,9 @@ test("requires documented review, preserves it across sections, and recalculates
 test("keeps matter decisions isolated and represents negative estimated value", async ({
   page,
 }) => {
-  await page.getByLabel("Reviewer name").fill("Demo reviewer");
+  await page
+    .getByLabel("Simulated participant")
+    .selectOption("Maya Chen · Partner");
   await page
     .getByLabel("Review note")
     .fill(
@@ -138,9 +145,7 @@ test("mobile navigation and review controls remain usable without page overflow"
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    page.getByRole("button", { name: "Firm Operations", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Administration", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
   await expect(
     page.getByRole("button", { name: "Record review", exact: true }),
@@ -150,6 +155,7 @@ test("mobile navigation and review controls remain usable without page overflow"
       .locator(".matter-desk")
       .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
   ).toBe(true);
+  await page.getByText("Administration", { exact: true }).click();
   await page
     .getByRole("button", { name: "Firm Operations", exact: true })
     .click();

@@ -1,12 +1,14 @@
 # Law Suite walkthrough
 
-1. Open Matter Review and identify the synthetic-data notice. This is a functional interaction with fictional evidence, not a production AI/security demonstration.
-2. Inspect Project Northstar: consent clause, conflicting disclosure schedule, and missing authority. The latter two cannot be marked reviewed.
-3. Open Handoff requirements. Show separate review, source, and policy blockers. Export a demo packet containing unresolved issues.
-4. Select Meridian commercial dispute. Compare each excerpt, enter a reviewer and meaningful note, and record both reviews.
-5. Show readiness for supervising lawyer review. Reopen a policy check or issue to revoke readiness.
-6. Inspect Decision history and Value estimate. Increase assisted hours above baseline to demonstrate negative capacity value.
-7. Open Firm Operations. Filter a practice, export matching CSV, and record a sample identity review. No account permissions change.
-8. Open Research & Documents on the public preview to show the disconnected-service explanation.
+1. Open Matter Review. The portfolio cards and progress ring respond to your actions; all matters, people, and documents are fictional. Reset demo starts a fresh walkthrough after confirmation.
+2. In Northstar, open the full supply agreement and record a substantive review. On the conflicting schedule, type an escalation note, switch issues, and refresh: the draft survives. Select an owner and task date, then Assign or Escalate. The evidence remains contradicted.
+3. In Draft & sources, load the next sample revision. The corrected schedule lists the outstanding consent. Both dependent findings reopen; unaffected matters stay unchanged. Inspect the before/after documents on each affected issue, then record fresh reviews. Resolve the coordination task explicitly with a note when its request is answered. A completed review alone does not close an assignment.
+4. For the missing authority, assign research or explicitly exclude the unsupported proposition with a reason. To demonstrate a qualified internal memo, exclude it, then record review of that limitation. The evidence stays missing and the qualification appears in the draft and exports. This does not establish legal authority or closing readiness.
+5. In Handoff requirements, record both prerequisites. Each starts unchecked and records the simulated participant and time. Select the partner to approve the internal memorandum. Download its HTML record and open it to print or save as PDF; the JSON packet contains the full sample source and history data.
+6. Load another sample revision: the new schedule asserts that all consents exist. Reopened reviews and revoked approval demonstrate why a later source change matters. Comparing the revision does not resolve this scripted contradiction.
+7. Try Meridian for corrected receipt evidence and Evergreen for policy version changes. Missing legal/state sources require research or explicit scope limitation; the demo never invents verification.
+8. In draft intake, paste fictional text using references such as [N1 v3], [N2 v1], and [Z9 v1]. Matches, old versions, and unavailable sources are identified separately. No assertion is legally verified or auto-approved. Draft inputs remain separate by matter.
+9. Change the internal target receipt date and calendar-day interval. Record the visible assumptions in history. This illustrates an engagement target, not real court or statutory deadline rules.
+10. Inspect Decision history and Value estimate. Increase assisted hours above baseline to demonstrate negative capacity value. Administration → Firm Operations retains the sample filters, CSV, and access-review interactions. Research & Documents remains an optional disconnected service on the public preview.
 
-Changes persist across product-section navigation, but refresh resets them. Export before refreshing to retain a record. The production milestones are in the assessment; do not claim the prototype outperforms an established provider.
+Matter progress is stored locally in this browser, including decision drafts, history, imports, and source revisions. This is editable local storage, not a database or immutable audit. No AI, real identity enforcement, external notification, client delivery, or live integration runs in this journey. The production milestones are in the assessment; do not claim the prototype outperforms an established provider.

@@ -12,11 +12,11 @@ This is an independent prototype. All Matter Review excerpts, names, and amounts
 
 | Surface | Implemented | Boundary |
 |---|---|---|
-| Matter Review | Three US scenarios; search/filter; excerpt inspection; reviewer notes; reopen decisions; policy checks; recalculated handoff; JSON packet; value assumptions | Synthetic in-memory data. Persists across section navigation; refresh resets it. No automatic analysis or new-source intake |
+| Matter Review | Layered dashboard; three US scenarios; saved notes and assignments; full sample sources; version comparisons and dependent review invalidation; working drafts; reference inspection; participant-stamped checks; partner approval; HTML memorandum and JSON export; internal targets | Browser-local fictional data. Survives navigation and refresh; Reset demo clears it. Comparisons and source links are scripted. Text imports check identifiers/versions only, without AI or legal verification |
 | Firm Operations | Sample charts, identity filters, sample access review, recommendation state, filtered CSV export | No live identity provider, telemetry, permissions changes, or persistence |
 | Research & Documents | Optional local FastAPI prototype for matter metadata, bounded storage, unverified model drafts | Data API disabled by default; no authentication/tenancy, extraction, retrieval, citator, or immutable audit |
 
-A source being available is different from a lawyer recording review. Missing, conflicting, or superseded evidence cannot be marked reviewed. Complete the Meridian sample to see supervising-lawyer readiness, then reopen a decision to revoke it. No action files or sends work product.
+Evidence quality, work ownership, and internal approval are separate. Save or escalate blocked findings; supported findings can be reviewed, while unsupported propositions require resolution or explicit exclusion from reliance. Exclusions remain visible in drafts and exports and do not turn missing evidence into verified evidence. Outstanding assignments require an explicit task resolution. Complete prerequisites and select the simulated partner to approve the internal memorandum. Source or draft changes revoke affected reviews and approval. No action files or sends work product.
 
 ## Assessment and roadmap
 
@@ -43,6 +43,7 @@ Uploads are limited to 10 MiB, hashed from bytes, and marked stored rather than 
 - python -m unittest discover -s tests -p "test_*.py"
 - python -m py_compile backend/server.py backend/research_safety.py backend_test.py
 - In frontend: npm run build
+- In frontend: npm test -- --watchAll=false --runInBand
 - In frontend: npx playwright install chromium, then npm run test:e2e
 
 Boundary tests use fake persistence. The separate backend_test.py harness exercises a disposable MongoDB API in CI. RUN_LIVE_AI_TESTS=true adds a provider contract smoke test, not legal-accuracy evaluation. Build, browser tests, and backend integration must pass before Pages deployment on main.

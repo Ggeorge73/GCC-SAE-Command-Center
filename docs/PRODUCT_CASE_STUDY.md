@@ -10,7 +10,7 @@ The revised Law Suite centers on an issue, its evidence, uncertainty, owner, and
 
 Each issue has category, severity, owner, source/version, excerpt, evidence state, next step, review status, and reviewer note. Source states distinguish available, absent, conflicting, and outdated material. Availability permits a user-recorded review; it does not prove the finding or authenticate the reviewer.
 
-Handoff requires all issue reviews, supported fixture evidence, and recorded policy prerequisites. Reopening a review or policy check recalculates readiness. Export retains open findings and qualifications. It is a session record, not an immutable audit or filing authorization.
+The second demo iteration separates evidence state, assigned work, and internal approval. Handoff requires current reviews, supported evidence for included propositions, resolved assignments, recorded prerequisites, and a valid internal target. Unsupported propositions can be explicitly excluded with a reason and reviewed as limitations; their evidence remains unverified. Source revisions and draft edits reopen dependent reviews and revoke approval. Browser-local progress survives refresh. HTML memorandum and JSON exports retain open findings, sources, qualifications, and simulated participant history. These are editable demo records, not immutable audits or filing authorization.
 
 ## Product decisions
 

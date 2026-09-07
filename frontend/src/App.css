@@ -13,6 +13,143 @@
   text-decoration: underline;
 }
 
+.law-suite-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 25px;
+  min-height: 58px;
+  background: #fff;
+  color: #315440;
+  border-bottom: 1px solid #dfe8df;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  font-family: Inter, system-ui, sans-serif;
+}
+.law-suite-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+}
+.law-suite-header nav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.law-suite-header nav > button,
+.law-suite-admin summary {
+  border: 0;
+  background: transparent;
+  color: #738671;
+  padding: 8px 12px;
+  font-size: 11px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.law-suite-header nav > button[aria-pressed="true"] {
+  background: #eaf2e7;
+  color: #406f44;
+  font-weight: 600;
+}
+.law-suite-header nav > button:hover,
+.law-suite-admin summary:hover {
+  background: #f0f5ed;
+}
+.law-suite-header-note {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #899780;
+}
+.law-suite-admin {
+  position: relative;
+}
+.law-suite-admin > div {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  width: 235px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #d9e4d4;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px #23452d20;
+}
+.law-suite-admin button {
+  border: 0;
+  border-radius: 6px;
+  padding: 9px;
+  background: #eef5e9;
+  color: #456a40;
+  text-align: left;
+  width: 100%;
+  font-size: 12px;
+  cursor: pointer;
+}
+.law-suite-admin p {
+  color: #809075;
+  font-size: 10px;
+  padding: 8px 5px 0;
+  margin: 0;
+}
+.law-suite-header :focus-visible {
+  outline: 3px solid #7cb08c;
+  outline-offset: 2px;
+}
+.workspace-unavailable {
+  flex: 1;
+  padding: 70px 10%;
+  background: #f4f8f1;
+  color: #2d4d33;
+}
+.workspace-unavailable h1 {
+  font:
+    600 32px Inter,
+    system-ui,
+    sans-serif;
+  margin-bottom: 20px;
+}
+.workspace-unavailable p {
+  max-width: 650px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  color: #6a7f5d;
+}
+@media (max-width: 980px) {
+  .law-suite-header-note {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .law-suite-header {
+    padding: 10px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .law-suite-header-brand {
+    width: 100%;
+    font-size: 14px;
+  }
+  .law-suite-header nav {
+    width: 100%;
+    gap: 0;
+    justify-content: space-between;
+  }
+  .law-suite-header nav > button,
+  .law-suite-admin summary {
+    font-size: 10px;
+    padding: 7px;
+  }
+  .law-suite-admin > div {
+    left: auto;
+    right: 0;
+  }
+}
+
 /* Ensure proper height on mobile */
 @supports (-webkit-touch-callout: none) {
   .App {

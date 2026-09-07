@@ -284,9 +284,10 @@ const Header = ({ workspaceMode, setWorkspaceMode, activeTab, setActiveTab }) =>
   <header className="law-suite-header">
     <div className="law-suite-header-brand"><Scale size={20} /> Law Suite</div>
     <nav aria-label="Law Suite sections">
-      {[["review", "Matter Review"], ["control", "Firm Operations"], ["workspace", "Research & Documents"]].map(([id, label]) => (
+      {[["review", "Matter Review"], ["workspace", "Research & Documents"]].map(([id, label]) => (
         <button type="button" key={id} aria-pressed={workspaceMode === id} onClick={() => setWorkspaceMode(id)}>{label}</button>
       ))}
+      <details className="law-suite-admin"><summary>Administration</summary><div><button type="button" aria-pressed={workspaceMode === "control"} onClick={(event) => { setWorkspaceMode("control"); event.currentTarget.closest("details").removeAttribute("open"); }}>Firm Operations</button><p>Sample adoption, access, and firm reporting</p></div></details>
       {workspaceMode === "workspace" && BACKEND_URL && <button type="button" onClick={() => setActiveTab(activeTab === "records" ? "audit" : "records")}>{activeTab === "records" ? "View activity" : "View documents"}</button>}
     </nav>
     <span className="law-suite-header-note">PRODUCT PREVIEW · SYNTHETIC DATA ONLY</span>
@@ -732,9 +733,7 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const useFirebaseStorage = false; // External storage is disabled pending authorization.
-  // Lead with the portfolio's enterprise administration surface. The
-  // practitioner workspace remains one click away and loads its API data only
-  // when requested.
+  // Lead with the local practitioner demo; load the optional API only on request.
   const [workspaceMode, setWorkspaceMode] = useState("review");
 
   // Fetch deal rooms
