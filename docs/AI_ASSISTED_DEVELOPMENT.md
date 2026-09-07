@@ -31,7 +31,7 @@ Human ownership remained with the product decisions that determine whether the r
 
 The repository began with a rapid AI-generated legal-workspace scaffold. That starting point is visible in Git history. The portfolio work extended and materially redirected it by adding:
 
-1. An enterprise Control Center for adoption, value, identity, and governance.
+1. An enterprise Firm Operations for adoption, value, identity, and governance.
 2. An observe–diagnose–intervene product loop instead of a collection of charts.
 3. Metric definitions, guardrails, event contracts, and a launch strategy.
 4. Explicit synthetic-data disclosure and product maturity boundaries.
@@ -56,9 +56,9 @@ AI-produced code was not accepted solely because it rendered once. The release p
 
 ## Known boundaries
 
-The Control Center currently uses a synthetic in-browser dataset. SSO, SCIM, RBAC enforcement, customer telemetry, an event warehouse, and immutable audit export are product contracts and roadmap items—not implemented production capabilities.
+The Firm Operations currently uses a synthetic in-browser dataset. SSO, SCIM, RBAC enforcement, customer telemetry, an event warehouse, and immutable audit export are product contracts and roadmap items—not implemented production capabilities.
 
-The practitioner workspace retains its FastAPI and MongoDB backend design. The static portfolio deployment leads with the self-contained Control Center; backend-dependent practitioner actions require a configured local or hosted API.
+The practitioner workspace retains its FastAPI and MongoDB backend design. The static portfolio deployment leads with the self-contained Firm Operations; backend-dependent practitioner actions require a configured local or hosted API.
 
 ## How to discuss the work
 

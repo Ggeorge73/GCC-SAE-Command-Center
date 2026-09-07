@@ -43,7 +43,7 @@ export const computeFileHash = async (file) => {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   } catch (error) {
     console.error('Error computing hash:', error);
-    return Date.now().toString(16); // Fallback to timestamp-based ID
+    throw new Error("File integrity hashing failed; upload stopped.");
   }
 };
 

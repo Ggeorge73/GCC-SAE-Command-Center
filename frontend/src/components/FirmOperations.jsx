@@ -101,10 +101,10 @@ const recommendations = [
     owner: "Security",
   },
   {
-    id: "vault-activation",
+    id: "records-activation",
     priority: "Expansion",
     title: "Activate underused document workflows",
-    description: "Forty-seven active users have not used the Vault in 30 days despite matter access.",
+    description: "Forty-seven active users have not used the Document Records in 30 days despite matter access.",
     impact: "~310 hours/month opportunity",
     owner: "Legal Ops",
   },
@@ -120,19 +120,19 @@ const metricCards = [
 const MetricCard = ({ metric }) => {
   const Icon = metric.icon;
   return (
-    <article className="rounded-lg border border-white/5 bg-[#0f1f38] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
+    <article className="rounded-lg border border-slate-200 bg-[#fffefa] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
       <div className="mb-4 flex items-start justify-between">
-        <div className="rounded-md border border-[#c9a227]/20 bg-[#c9a227]/10 p-2 text-[#d9b94d]">
+        <div className="rounded-md border border-[#245a43]/20 bg-[#245a43]/10 p-2 text-[#245a43]">
           <Icon className="h-4 w-4" />
         </div>
-        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-400">
+        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-700">
           {metric.delta}
         </span>
       </div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{metric.label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600">{metric.label}</p>
       <div className="mt-1 flex items-end gap-2">
-        <strong className="font-serif text-3xl font-semibold text-slate-100">{metric.value}</strong>
-        <span className="pb-1 text-xs text-slate-500">{metric.context}</span>
+        <strong className="font-serif text-3xl font-semibold text-slate-800">{metric.value}</strong>
+        <span className="pb-1 text-xs text-slate-600">{metric.context}</span>
       </div>
     </article>
   );
@@ -141,8 +141,8 @@ const MetricCard = ({ metric }) => {
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-[#c9a227]/20 bg-[#081321]/95 p-3 text-xs shadow-xl">
-      <p className="mb-2 font-semibold text-slate-200">{label}</p>
+    <div className="rounded-md border border-[#245a43]/20 bg-[#f4f5ef]/95 p-3 text-xs shadow-xl">
+      <p className="mb-2 font-semibold text-slate-700">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} style={{ color: entry.color }}>
           {entry.name}: {entry.value}%
@@ -152,13 +152,14 @@ const ChartTooltip = ({ active, payload, label }) => {
   );
 };
 
-const CommandCenter = () => {
+const FirmOperations = () => {
   const [timeframe, setTimeframe] = useState("90 days");
   const [practiceGroup, setPracticeGroup] = useState("All practices");
   const [userQuery, setUserQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All roles");
   const [selectedQuestion, setSelectedQuestion] = useState("Where is adoption lagging?");
   const [startedActions, setStartedActions] = useState([]);
+  const [reviewedUsers, setReviewedUsers] = useState([]);
 
   const visiblePracticeGroups = useMemo(
     () => practiceGroup === "All practices" ? practiceGroups : practiceGroups.filter((group) => group.name === practiceGroup),
@@ -182,44 +183,45 @@ const CommandCenter = () => {
   const exportReport = () => {
     const rows = [
       ["Practice group", "Adoption", "Advanced workflow depth", "Users"],
-      ...practiceGroups.map((group) => [group.name, `${group.adoption}%`, `${group.depth}%`, group.users]),
+      ...visiblePracticeGroups.map((group) => [group.name, `${group.adoption}%`, `${group.depth}%`, group.users]),
     ];
     const csv = rows.map((row) => row.map((value) => `"${value}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "law-suite-control-center-adoption-report.csv";
+    anchor.download = "law-suite-firm-operations-adoption-report.csv";
     anchor.click();
     URL.revokeObjectURL(url);
     toast.success("Adoption report exported");
   };
 
   const selectedInsight = insights[selectedQuestion];
+  const visibleTrend = timeframe === "30 days" ? adoptionTrend.slice(-4) : adoptionTrend;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#081321] text-slate-100" data-testid="command-center">
+    <div className="h-full overflow-y-auto bg-[#f4f5ef] text-slate-800" data-testid="firm-operations">
       <div className="mx-auto max-w-[1600px] px-4 py-5 md:px-7 lg:px-9">
         <div className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-full border border-[#c9a227]/25 bg-[#c9a227]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">
-                Executive control surface
+              <span className="rounded-full border border-[#245a43]/25 bg-[#245a43]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">
+                Firm operations demo
               </span>
-              <span className="rounded-full border border-blue-400/20 bg-blue-400/10 px-2.5 py-1 text-[10px] font-semibold text-blue-300">
+              <span className="rounded-full border border-blue-400/20 bg-blue-400/10 px-2.5 py-1 text-[10px] font-semibold text-blue-700">
                 Sample portfolio data
               </span>
             </div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-white md:text-4xl">Law Suite Control Center</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              Turn legal-AI usage into an operating system for adoption, governance, and measurable value—not another static analytics dashboard.
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">Law Suite Firm Operations</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Explore sample adoption patterns and access-review decisions. All metrics are illustrative; no identity provider or policy engine is connected. Practice filters affect the practice chart and CSV only; summary cards and insights stay firm-wide.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={practiceGroup}
               onChange={(event) => setPracticeGroup(event.target.value)}
-              className="h-9 rounded-md border border-white/10 bg-[#0f1f38] px-3 text-xs text-slate-200 outline-none focus:border-[#c9a227]/60"
+              className="h-9 rounded-md border border-slate-200 bg-[#fffefa] px-3 text-xs text-slate-700 outline-none focus:border-[#245a43]/60"
               aria-label="Practice group filter"
             >
               <option>All practices</option>
@@ -228,7 +230,7 @@ const CommandCenter = () => {
             <select
               value={timeframe}
               onChange={(event) => setTimeframe(event.target.value)}
-              className="h-9 rounded-md border border-white/10 bg-[#0f1f38] px-3 text-xs text-slate-200 outline-none focus:border-[#c9a227]/60"
+              className="h-9 rounded-md border border-slate-200 bg-[#fffefa] px-3 text-xs text-slate-700 outline-none focus:border-[#245a43]/60"
               aria-label="Reporting timeframe"
             >
               <option>30 days</option>
@@ -238,7 +240,7 @@ const CommandCenter = () => {
             <button
               type="button"
               onClick={exportReport}
-              className="flex h-9 items-center gap-2 rounded-md border border-[#c9a227]/30 bg-[#c9a227]/10 px-3 text-xs font-semibold text-[#e1c56a] transition hover:bg-[#c9a227]/20"
+              className="flex h-9 items-center gap-2 rounded-md border border-[#245a43]/30 bg-[#245a43]/10 px-3 text-xs font-semibold text-[#245a43] transition hover:bg-[#245a43]/20"
               data-testid="export-adoption-report"
             >
               <Download className="h-3.5 w-3.5" /> Export report
@@ -251,56 +253,56 @@ const CommandCenter = () => {
         </div>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <section className="rounded-lg border border-white/5 bg-[#0f1f38] p-5">
+          <section className="rounded-lg border border-slate-200 bg-[#fffefa] p-5">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">Adoption trajectory</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">Adoption trajectory</p>
                 <h2 className="mt-1 font-serif text-xl font-semibold">From access to repeat value</h2>
-                <p className="mt-1 text-xs text-slate-500">Weekly active use and policy coverage · {timeframe}</p>
+                <p className="mt-1 text-xs text-slate-600">Weekly active use and policy coverage · {timeframe} requested window · sample data ends Aug 12, 2026; longer history unavailable</p>
               </div>
-              <BarChart3 className="h-5 w-5 text-slate-600" />
+              <BarChart3 className="h-5 w-5 text-slate-500" />
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={adoptionTrend} margin={{ top: 8, right: 10, left: -25, bottom: 0 }}>
+                <AreaChart data={visibleTrend} margin={{ top: 8, right: 10, left: -25, bottom: 0 }}>
                   <defs>
                     <linearGradient id="adoptionFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#c9a227" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#c9a227" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#245a43" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#245a43" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(148,163,184,0.08)" vertical={false} />
                   <XAxis dataKey="week" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[40, 100]} tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="weeklyActive" name="Weekly active" stroke="#d9b94d" strokeWidth={2.5} fill="url(#adoptionFill)" />
+                  <Area type="monotone" dataKey="weeklyActive" name="Weekly active" stroke="#245a43" strokeWidth={2.5} fill="url(#adoptionFill)" />
                   <Area type="monotone" dataKey="governed" name="Policy covered" stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="4 4" fill="transparent" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </section>
 
-          <section className="rounded-lg border border-white/5 bg-[#0f1f38] p-5">
+          <section className="rounded-lg border border-slate-200 bg-[#fffefa] p-5">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">Governance coverage</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">Governance coverage</p>
                 <h2 className="mt-1 font-serif text-xl font-semibold">Controls at a glance</h2>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-emerald-500/20 text-sm font-bold text-emerald-400">92</div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-emerald-500/20 text-sm font-bold text-emerald-700">92</div>
             </div>
             <div className="space-y-2.5">
               {governanceControls.map((control) => {
                 const Icon = control.icon;
                 return (
-                  <div key={control.name} className="flex items-center gap-3 rounded-md border border-white/5 bg-[#081321]/55 p-3">
-                    <div className={`rounded-md p-2 ${control.status === "healthy" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+                  <div key={control.name} className="flex items-center gap-3 rounded-md border border-slate-200 bg-[#f4f5ef]/55 p-3">
+                    <div className={`rounded-md p-2 ${control.status === "healthy" ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-slate-200">{control.name}</p>
-                      <p className="truncate text-[10px] text-slate-500">{control.detail}</p>
+                      <p className="text-xs font-semibold text-slate-700">{control.name}</p>
+                      <p className="truncate text-[10px] text-slate-600">{control.detail}</p>
                     </div>
-                    <span className={`text-xs font-bold ${control.status === "healthy" ? "text-emerald-400" : "text-amber-400"}`}>{control.value}</span>
+                    <span className={`text-xs font-bold ${control.status === "healthy" ? "text-emerald-700" : "text-amber-700"}`}>{control.value}</span>
                   </div>
                 );
               })}
@@ -309,14 +311,14 @@ const CommandCenter = () => {
         </div>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.25fr_1fr]">
-          <section className="rounded-lg border border-white/5 bg-[#0f1f38] p-5">
+          <section className="rounded-lg border border-slate-200 bg-[#fffefa] p-5">
             <div className="mb-5 flex items-start justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">Adoption by practice</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">Adoption by practice</p>
                 <h2 className="mt-1 font-serif text-xl font-semibold">Find the activation gap</h2>
-                <p className="mt-1 text-xs text-slate-500">Adoption measures repeat weekly use; depth measures advanced workflow use.</p>
+                <p className="mt-1 text-xs text-slate-600">Adoption measures repeat weekly use; depth measures advanced workflow use.</p>
               </div>
-              <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] text-slate-400">{practiceGroup}</span>
+              <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] text-slate-600">{practiceGroup}</span>
             </div>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -325,18 +327,18 @@ const CommandCenter = () => {
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis type="category" dataKey="name" width={78} tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="adoption" name="Adoption" fill="#c9a227" radius={[0, 3, 3, 0]} barSize={10} />
+                  <Bar dataKey="adoption" name="Adoption" fill="#245a43" radius={[0, 3, 3, 0]} barSize={10} />
                   <Bar dataKey="depth" name="Workflow depth" fill="#38bdf8" radius={[0, 3, 3, 0]} barSize={10} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </section>
 
-          <section className="rounded-lg border border-[#c9a227]/15 bg-[linear-gradient(145deg,#111f35,#0b1728)] p-5">
+          <section className="rounded-lg border border-[#245a43]/15 bg-[linear-gradient(145deg,#111f35,#0b1728)] p-5">
             <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-md bg-[#c9a227]/10 p-2 text-[#d9b94d]"><Sparkles className="h-4 w-4" /></div>
+              <div className="rounded-md bg-[#245a43]/10 p-2 text-[#245a43]"><Sparkles className="h-4 w-4" /></div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">Deployment intelligence</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">Deployment intelligence</p>
                 <h2 className="font-serif text-xl font-semibold">Ask about your rollout</h2>
               </div>
             </div>
@@ -346,44 +348,44 @@ const CommandCenter = () => {
                   type="button"
                   key={question}
                   onClick={() => setSelectedQuestion(question)}
-                  className={`rounded-full border px-3 py-1.5 text-[10px] transition ${selectedQuestion === question ? "border-[#c9a227]/40 bg-[#c9a227]/15 text-[#e1c56a]" : "border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20"}`}
+                  className={`rounded-full border px-3 py-1.5 text-[10px] transition ${selectedQuestion === question ? "border-[#245a43]/40 bg-[#245a43]/15 text-[#245a43]" : "border-slate-200 bg-white/[0.02] text-slate-600 hover:border-white/20"}`}
                 >
                   {question}
                 </button>
               ))}
             </div>
-            <div className="mt-4 rounded-md border border-white/5 bg-[#081321]/70 p-4">
+            <div className="mt-4 rounded-md border border-slate-200 bg-[#f4f5ef]/70 p-4">
               <div className="mb-2 flex items-start gap-2">
-                <Lightbulb className="mt-0.5 h-4 w-4 flex-none text-[#d9b94d]" />
-                <h3 className="text-sm font-semibold text-slate-100">{selectedInsight.title}</h3>
+                <Lightbulb className="mt-0.5 h-4 w-4 flex-none text-[#245a43]" />
+                <h3 className="text-sm font-semibold text-slate-800">{selectedInsight.title}</h3>
               </div>
-              <p className="text-xs leading-5 text-slate-400">{selectedInsight.body}</p>
-              <div className="mt-3 border-t border-white/5 pt-3 text-[10px] font-medium text-slate-500">Evidence: {selectedInsight.evidence}</div>
+              <p className="text-xs leading-5 text-slate-600">{selectedInsight.body}</p>
+              <div className="mt-3 border-t border-slate-200 pt-3 text-[10px] font-medium text-slate-600">Evidence: {selectedInsight.evidence}</div>
             </div>
           </section>
         </div>
 
-        <section className="mt-4 rounded-lg border border-white/5 bg-[#0f1f38] p-5">
+        <section className="mt-4 rounded-lg border border-slate-200 bg-[#fffefa] p-5">
           <div className="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">Identity and access</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">Identity and access</p>
               <h2 className="mt-1 font-serif text-xl font-semibold">Review access before it becomes risk</h2>
-              <p className="mt-1 text-xs text-slate-500">Profile attributes are sample SCIM data for the portfolio demonstration.</p>
+              <p className="mt-1 text-xs text-slate-600">Profile attributes are sample SCIM data. Record a review below; no account permissions change.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <label className="flex h-9 min-w-[220px] items-center gap-2 rounded-md border border-white/10 bg-[#081321] px-3 text-slate-500 focus-within:border-[#c9a227]/50">
+              <label className="flex h-9 min-w-[220px] items-center gap-2 rounded-md border border-slate-200 bg-[#f4f5ef] px-3 text-slate-600 focus-within:border-[#245a43]/50">
                 <Search className="h-3.5 w-3.5" />
                 <input
                   value={userQuery}
                   onChange={(event) => setUserQuery(event.target.value)}
                   placeholder="Search people or practices"
-                  className="w-full bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-600"
+                  className="w-full bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-500"
                 />
               </label>
               <select
                 value={roleFilter}
                 onChange={(event) => setRoleFilter(event.target.value)}
-                className="h-9 rounded-md border border-white/10 bg-[#081321] px-3 text-xs text-slate-200 outline-none focus:border-[#c9a227]/60"
+                className="h-9 rounded-md border border-slate-200 bg-[#f4f5ef] px-3 text-xs text-slate-700 outline-none focus:border-[#245a43]/60"
                 aria-label="Role filter"
               >
                 <option>All roles</option>
@@ -397,69 +399,69 @@ const CommandCenter = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left">
               <thead>
-                <tr className="text-[10px] uppercase tracking-[0.14em] text-slate-600">
-                  <th className="border-b border-white/5 px-3 py-3 font-semibold">User</th>
-                  <th className="border-b border-white/5 px-3 py-3 font-semibold">Practice</th>
-                  <th className="border-b border-white/5 px-3 py-3 font-semibold">Role</th>
-                  <th className="border-b border-white/5 px-3 py-3 font-semibold">Last active</th>
-                  <th className="border-b border-white/5 px-3 py-3 font-semibold">Access posture</th>
-                  <th className="border-b border-white/5 px-3 py-3 font-semibold">Action</th>
+                <tr className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
+                  <th className="border-b border-slate-200 px-3 py-3 font-semibold">User</th>
+                  <th className="border-b border-slate-200 px-3 py-3 font-semibold">Practice</th>
+                  <th className="border-b border-slate-200 px-3 py-3 font-semibold">Role</th>
+                  <th className="border-b border-slate-200 px-3 py-3 font-semibold">Last active</th>
+                  <th className="border-b border-slate-200 px-3 py-3 font-semibold">Access posture</th>
+                  <th className="border-b border-slate-200 px-3 py-3 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleUsers.map((user) => (
-                  <tr key={user.name} className="group text-xs text-slate-300">
-                    <td className="border-b border-white/[0.04] px-3 py-3">
+                  <tr key={user.name} className="group text-xs text-slate-600">
+                    <td className="border-b border-slate-200 px-3 py-3">
                       <div className="flex items-center gap-2.5">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#152a4a] text-[10px] font-bold text-slate-300">{user.initials}</span>
-                        <div><p className="font-semibold text-slate-200">{user.name}</p><p className="text-[10px] text-slate-600">{user.status}</p></div>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-[#152a4a] text-[10px] font-bold text-slate-600">{user.initials}</span>
+                        <div><p className="font-semibold text-slate-700">{user.name}</p><p className="text-[10px] text-slate-500">{user.status}</p></div>
                       </div>
                     </td>
-                    <td className="border-b border-white/[0.04] px-3 py-3 text-slate-400">{user.group}</td>
-                    <td className="border-b border-white/[0.04] px-3 py-3 text-slate-400">{user.role}</td>
-                    <td className="border-b border-white/[0.04] px-3 py-3 text-slate-500">{user.lastActive}</td>
-                    <td className="border-b border-white/[0.04] px-3 py-3">
-                      <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${user.risk === "Low" ? "bg-emerald-500/10 text-emerald-400" : user.risk === "Review" ? "bg-amber-500/10 text-amber-400" : "bg-rose-500/10 text-rose-400"}`}>
+                    <td className="border-b border-slate-200 px-3 py-3 text-slate-600">{user.group}</td>
+                    <td className="border-b border-slate-200 px-3 py-3 text-slate-600">{user.role}</td>
+                    <td className="border-b border-slate-200 px-3 py-3 text-slate-600">{user.lastActive}</td>
+                    <td className="border-b border-slate-200 px-3 py-3">
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${user.risk === "Low" ? "bg-emerald-500/10 text-emerald-700" : user.risk === "Review" ? "bg-amber-500/10 text-amber-700" : "bg-rose-500/10 text-rose-700"}`}>
                         {user.risk}
                       </span>
                     </td>
-                    <td className="border-b border-white/[0.04] px-3 py-3">
-                      <button type="button" className="text-[10px] font-semibold text-[#d9b94d] opacity-70 transition hover:opacity-100">Review access</button>
+                    <td className="border-b border-slate-200 px-3 py-3">
+                      <button type="button" onClick={() => { setReviewedUsers(current => [...new Set([...current, user.name])]); toast.info("Sample review recorded. No account access was changed."); }} disabled={reviewedUsers.includes(user.name)} className="text-[10px] font-semibold text-[#245a43] opacity-70 transition hover:opacity-100">{reviewedUsers.includes(user.name) ? "Review noted (demo)" : "Record sample review"}</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {visibleUsers.length === 0 && <p className="py-8 text-center text-xs text-slate-500">No identities match these filters.</p>}
+          {visibleUsers.length === 0 && <p className="py-8 text-center text-xs text-slate-600">No identities match these filters.</p>}
         </section>
 
-        <section className="mt-4 rounded-lg border border-white/5 bg-[#0f1f38] p-5">
+        <section className="mt-4 rounded-lg border border-slate-200 bg-[#fffefa] p-5">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d9b94d]">Recommended next actions</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#245a43]">Recommended next actions</p>
               <h2 className="mt-1 font-serif text-xl font-semibold">Move from insight to intervention</h2>
             </div>
-            <ArrowUpRight className="h-5 w-5 text-slate-600" />
+            <ArrowUpRight className="h-5 w-5 text-slate-500" />
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
             {recommendations.map((recommendation) => {
               const started = startedActions.includes(recommendation.id);
               return (
-                <article key={recommendation.id} className="flex min-h-[190px] flex-col rounded-md border border-white/5 bg-[#081321]/60 p-4">
+                <article key={recommendation.id} className="flex min-h-[190px] flex-col rounded-md border border-slate-200 bg-[#f4f5ef]/60 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-[#c9a227]/10 px-2 py-1 text-[10px] font-semibold text-[#d9b94d]">{recommendation.priority}</span>
-                    <span className="text-[10px] text-slate-600">Owner · {recommendation.owner}</span>
+                    <span className="rounded-full bg-[#245a43]/10 px-2 py-1 text-[10px] font-semibold text-[#245a43]">{recommendation.priority}</span>
+                    <span className="text-[10px] text-slate-500">Owner · {recommendation.owner}</span>
                   </div>
-                  <h3 className="mt-4 text-sm font-semibold text-slate-100">{recommendation.title}</h3>
-                  <p className="mt-2 flex-1 text-xs leading-5 text-slate-500">{recommendation.description}</p>
-                  <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-3">
-                    <span className="text-[10px] font-medium text-emerald-400">{recommendation.impact}</span>
+                  <h3 className="mt-4 text-sm font-semibold text-slate-800">{recommendation.title}</h3>
+                  <p className="mt-2 flex-1 text-xs leading-5 text-slate-600">{recommendation.description}</p>
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3">
+                    <span className="text-[10px] font-medium text-emerald-700">{recommendation.impact}</span>
                     <button
                       type="button"
                       onClick={() => startAction(recommendation)}
                       disabled={started}
-                      className={`flex items-center gap-1 text-[10px] font-semibold transition ${started ? "text-emerald-400" : "text-[#d9b94d] hover:text-[#f0d986]"}`}
+                      className={`flex items-center gap-1 text-[10px] font-semibold transition ${started ? "text-emerald-700" : "text-[#245a43] hover:text-[#173f30]"}`}
                     >
                       {started ? <><CheckCircle2 className="h-3.5 w-3.5" /> Plan started</> : <>Start plan <ArrowUpRight className="h-3.5 w-3.5" /></>}
                     </button>
@@ -470,13 +472,13 @@ const CommandCenter = () => {
           </div>
         </section>
 
-        <footer className="mt-5 flex flex-col justify-between gap-2 border-t border-white/5 py-4 text-[10px] text-slate-600 sm:flex-row">
+        <footer className="mt-5 flex flex-col justify-between gap-2 border-t border-slate-200 py-4 text-[10px] text-slate-500 sm:flex-row">
           <span>Portfolio concept · Law Suite enterprise administration</span>
-          <span>Metrics are synthetic and explicitly labeled; product decisions and workflows are original.</span>
+          <span>Metrics are synthetic and explicitly labeled; no live access controls or telemetry are connected.</span>
         </footer>
       </div>
     </div>
   );
 };
 
-export default CommandCenter;
+export default FirmOperations;

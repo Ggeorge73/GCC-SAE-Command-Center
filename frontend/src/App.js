@@ -15,7 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import CommandCenter from "@/components/CommandCenter";
+import FirmOperations from "@/components/FirmOperations";
+import MatterDesk from "@/components/MatterDesk";
 import {
   Select,
   SelectContent,
@@ -34,13 +35,6 @@ import {
 } from "@/components/ui/dialog";
 import { Toaster, toast } from "sonner";
 
-// Firebase imports for storage
-import {
-  uploadToFirebaseStorage,
-  deleteFromFirebaseStorage,
-  isFirebaseAvailable,
-  computeFileHash,
-} from "@/lib/firebase";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -84,7 +78,8 @@ const StatusBadge = ({ status }) => {
     compliant: { className: "badge-compliant", label: "COMPLIANT" },
     pending: { className: "badge-pending", label: "PENDING" },
     overdue: { className: "badge-overdue", label: "OVERDUE" },
-    indexed: { className: "badge-indexed", label: "INDEXED" },
+    stored: { className: "badge-indexed", label: "STORED · NOT ANALYZED" },
+    indexed: { className: "badge-indexed", label: "LEGACY · NOT VERIFIED" },
     processing: { className: "badge-pending", label: "PROCESSING" },
   };
   const { className, label } = config[status] || config.pending;
@@ -103,7 +98,7 @@ const LawSuiteLogo = () => (
     </div>
     <div>
       <h1 className="font-serif text-lg font-semibold text-[var(--foreground)]">Law Suite</h1>
-      <p className="text-[10px] text-[var(--foreground-muted)] tracking-wider">Executive Deal Room</p>
+      <p className="text-[10px] text-[var(--foreground-muted)] tracking-wider">Matter workspace</p>
     </div>
   </div>
 );
@@ -124,7 +119,7 @@ const StorageBadge = ({ useFirebase }) => (
 const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRoom, complianceItems, onUpdateCompliance }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newDealName, setNewDealName] = useState("");
-  const [newJurisdiction, setNewJurisdiction] = useState("NIGERIA (CAMA 2020)");
+  const [newJurisdiction, setNewJurisdiction] = useState("US (DELAWARE DGCL)");
 
   const handleCreate = async () => {
     if (!newDealName.trim()) return;
@@ -238,23 +233,6 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
           </div>
         </ScrollArea>
 
-        {/* Tools Section */}
-        <div className="mt-4 pt-4 border-t border-[var(--navy-light)]">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground-muted)] mb-2 block">
-            Tools
-          </span>
-          <div className="space-y-1">
-            <button className="w-full flex items-center gap-2 p-2 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-secondary)] rounded-sm transition-colors">
-              <FileEdit className="w-4 h-4" />
-              Drafting
-            </button>
-            <button className="w-full flex items-center gap-2 p-2 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-secondary)] rounded-sm transition-colors">
-              <BarChart2 className="w-4 h-4" />
-              Analytics
-            </button>
-          </div>
-        </div>
-
         {/* Statutory Tracker */}
         <div className="mt-4 pt-4 border-t border-[var(--navy-light)]">
           <div className="flex items-center justify-between mb-2">
@@ -302,105 +280,16 @@ const Sidebar = ({ dealRooms, selectedDealRoom, onSelectDealRoom, onCreateDealRo
 };
 
 // Header Component
-const Header = ({ selectedDealRoom, activeTab, setActiveTab, useFirebaseStorage, workspaceMode, setWorkspaceMode }) => (
-  <header className="glass-header h-14 flex items-center justify-between px-4 sticky top-0 z-20">
-    <div className="flex items-center gap-4">
-      {/* Mobile menu */}
-      <button className="md:hidden p-2 hover:bg-[var(--background-secondary)] rounded-sm">
-        <Menu className="w-5 h-5" />
-      </button>
-      
-      {/* Deal room info */}
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-sm bg-[var(--accent-gold-dim)] flex items-center justify-center text-[var(--primary)] font-serif font-semibold">
-          {workspaceMode === "control" ? "C" : "S"}
-        </div>
-        <div>
-          <h2 className="font-serif font-semibold text-[var(--foreground)]">
-            {workspaceMode === "control" ? "Law Suite Control Center" : (selectedDealRoom?.name || "Law Suite")}
-          </h2>
-          <p className="text-[10px] text-[var(--foreground-muted)]">
-            {workspaceMode === "control" ? "Adoption · Governance · Value" : "Privileged & Confidential"}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div className="flex items-center gap-3">
-      {/* Case ID */}
-      {workspaceMode === "workspace" && selectedDealRoom && (
-        <div className="hidden sm:flex flex-col items-end mr-2">
-          <span className="text-[10px] text-[var(--foreground-muted)]">CASE ID</span>
-          <span className="text-xs font-mono text-[var(--foreground)]">
-            {selectedDealRoom.id.slice(0, 8).toUpperCase()}
-          </span>
-        </div>
-      )}
-
-      {/* Action buttons */}
-      {workspaceMode === "workspace" && (
-        <Button variant="outline" size="sm" className="btn-secondary rounded-sm h-8 text-xs hidden xl:flex">
-          <Building2 className="w-3 h-3 mr-1" />
-          Call Counsel
-        </Button>
-      )}
-      
-      {/* Secure badge */}
-      <div className="flex items-center gap-1 px-2 py-1 badge-encrypted rounded-sm">
-        <Lock className="w-3 h-3" />
-        <span className="text-[10px] font-bold">{workspaceMode === "control" ? "ADMIN" : "SECURE"}</span>
-      </div>
-
-      {/* Primary workspace switcher */}
-      <div className="hidden lg:flex items-center rounded-sm border border-[var(--navy-light)] bg-[var(--background-secondary)] p-0.5">
-        <button
-          type="button"
-          onClick={() => setWorkspaceMode("workspace")}
-          className={`h-7 px-2.5 text-[10px] font-semibold transition ${workspaceMode === "workspace" ? "bg-[var(--accent-gold-dim)] text-[var(--primary)]" : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"}`}
-          data-testid="workspace-mode"
-        >
-          Deal workspace
-        </button>
-        <button
-          type="button"
-          onClick={() => setWorkspaceMode("control")}
-          className={`h-7 px-2.5 text-[10px] font-semibold transition ${workspaceMode === "control" ? "bg-[var(--accent-gold-dim)] text-[var(--primary)]" : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"}`}
-          data-testid="control-center-mode"
-        >
-          Control Center
-        </button>
-      </div>
-
-      {/* Tabs */}
-      {workspaceMode === "workspace" && <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden md:block">
-        <TabsList className="bg-[var(--background-secondary)] h-8">
-          <TabsTrigger
-            data-testid="tab-vault"
-            value="vault"
-            className="text-xs data-[state=active]:bg-[var(--accent-gold-dim)] data-[state=active]:text-[var(--primary)]"
-          >
-            The Vault
-          </TabsTrigger>
-          <TabsTrigger
-            data-testid="tab-audit"
-            value="audit"
-            className="text-xs data-[state=active]:bg-[var(--accent-gold-dim)] data-[state=active]:text-[var(--primary)]"
-          >
-            Audit Trail
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>}
-
-      {/* User menu */}
-      <div className="flex items-center gap-2 pl-3 border-l border-[var(--navy-light)]">
-        <span className="text-[10px] text-[var(--foreground-muted)] hidden lg:block">
-          Firm Administrator
-        </span>
-        <button className="p-1 hover:bg-[var(--background-secondary)] rounded-sm">
-          <LogOut className="w-4 h-4 text-[var(--foreground-muted)]" />
-        </button>
-      </div>
-    </div>
+const Header = ({ workspaceMode, setWorkspaceMode, activeTab, setActiveTab }) => (
+  <header className="law-suite-header">
+    <div className="law-suite-header-brand"><Scale size={20} /> Law Suite</div>
+    <nav aria-label="Law Suite sections">
+      {[["review", "Matter Review"], ["control", "Firm Operations"], ["workspace", "Research & Documents"]].map(([id, label]) => (
+        <button type="button" key={id} aria-pressed={workspaceMode === id} onClick={() => setWorkspaceMode(id)}>{label}</button>
+      ))}
+      {workspaceMode === "workspace" && BACKEND_URL && <button type="button" onClick={() => setActiveTab(activeTab === "records" ? "audit" : "records")}>{activeTab === "records" ? "View activity" : "View documents"}</button>}
+    </nav>
+    <span className="law-suite-header-note">PRODUCT PREVIEW · SYNTHETIC DATA ONLY</span>
   </header>
 );
 
@@ -410,7 +299,7 @@ const ChatMessage = ({ message, isUser }) => (
     <div className={`max-w-[90%] p-4 ${isUser ? "chat-message-user" : "chat-message-assistant"}`}>
       {!isUser && message.reference_id && (
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-          <span className="font-serif text-xs text-[var(--primary)]">LEARNED SILK</span>
+          <span className="font-serif text-xs text-[var(--primary)]">LAW SUITE RESEARCH</span>
           <span className="text-[10px] text-[var(--foreground-muted)]">
             {new Date(message.timestamp).toLocaleTimeString()}
           </span>
@@ -442,7 +331,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
     if (messages.length === 0) {
       setMessages([{
         id: "welcome",
-        content: `Greetings. I am the Law Suite Legal Advisor. I can help analyze matters using CAMA 2020, DGCL, and international precedents. I stand ready to apply legal research and strategic analysis to your commercial interests. How may I guide your Board today?`,
+        content: `Law Suite Research prepares unverified drafts for lawyer review. Document contents and current legal authorities are not connected in this prototype. Use synthetic information only; verify every legal proposition independently.`,
         isUser: false,
         reference_id: "LAW-INIT",
         timestamp: new Date().toISOString(),
@@ -488,7 +377,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
-      toast.error("Failed to get response from the Advocate");
+      toast.error("Research service is unavailable. No legal answer was generated.");
     } finally {
       setIsLoading(false);
     }
@@ -505,7 +394,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
           {isLoading && (
             <div className="chat-message-assistant p-4 max-w-[90%]">
               <div className="flex items-center gap-2">
-                <span className="font-serif text-xs text-[var(--primary)]">LEARNED SILK</span>
+                <span className="font-serif text-xs text-[var(--primary)]">LAW SUITE RESEARCH</span>
                 <div className="typing-indicator flex gap-1">
                   <span className="w-1.5 h-1.5 bg-[var(--primary)] rounded-full"></span>
                   <span className="w-1.5 h-1.5 bg-[var(--primary)] rounded-full"></span>
@@ -549,11 +438,9 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
                     ))}
                   </SelectContent>
                 </Select>
-                <button className="p-2 hover:bg-[var(--background)] rounded-sm transition-colors">
-                  <Upload className="w-4 h-4 text-[var(--foreground-muted)]" />
-                </button>
               </div>
               <Button
+                aria-label="Send research question"
                 data-testid="send-message-btn"
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isLoading}
@@ -564,7 +451,7 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
             </div>
           </div>
           <p className="text-[10px] text-center mt-2 text-[var(--foreground-muted)]">
-            Law Suite AI Advisory • Supports PDF, Images & Text • Not a substitute for human counsel.
+            Unverified research drafts · No document-text analysis or current-law verification.
           </p>
         </div>
       </div>
@@ -572,8 +459,8 @@ const ChatPanel = ({ selectedDealRoom, jurisdiction, setJurisdiction }) => {
   );
 };
 
-// Document Vault Component
-const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefresh, isUploading, uploadProgress, useFirebaseStorage }) => {
+// Document Records Component
+const DocumentRecords = ({ selectedDealRoom, documents, onUpload, onDelete, onRefresh, isUploading, uploadProgress, useFirebaseStorage }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState("Legal_Drafts");
   const [searchQuery, setSearchQuery] = useState("");
@@ -616,10 +503,11 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
       <div className="p-4 border-b border-[var(--navy-light)]">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className="font-serif text-lg text-[var(--primary)]">THE VAULT</h3>
+            <h3 className="font-serif text-lg text-[var(--primary)]">DOCUMENT RECORDS</h3>
             <StorageBadge useFirebase={useFirebaseStorage} />
           </div>
           <button
+            aria-label="Refresh documents"
             onClick={onRefresh}
             className="p-1 hover:bg-[var(--background-secondary)] rounded-sm transition-colors"
           >
@@ -643,6 +531,10 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
         {/* Drop zone */}
         <div
           data-testid="document-drop-zone"
+          role="button"
+          tabIndex={0}
+          aria-label="Upload synthetic documents"
+          onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (!isUploading) fileInputRef.current?.click(); } }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -666,7 +558,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
                 Drag & Drop Legal Briefs
               </p>
               <p className="text-[10px] text-[var(--foreground-muted)] mt-1">
-                PDF, DOCX, CSV (Max 65MB)
+                Synthetic files only · 10 MiB maximum · Storage only
               </p>
             </>
           )}
@@ -688,7 +580,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
             data-testid="document-search-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search indexed documents..."
+            placeholder="Search stored filenames..."
             className="input-advisory h-8 pl-8 text-xs"
           />
         </div>
@@ -718,7 +610,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium truncate">{doc.file_name}</span>
-                      <StatusBadge status={doc.indexing_status || 'indexed'} />
+                      <StatusBadge status={doc.indexing_status || 'stored'} />
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-[var(--foreground-muted)]">
                       <span>v{doc.version || '1.0'}</span>
@@ -739,6 +631,7 @@ const DocumentVault = ({ selectedDealRoom, documents, onUpload, onDelete, onRefr
                   </div>
                   <div className="flex items-center gap-1">
                     <button
+                      aria-label={`Delete ${doc.file_name}`}
                       onClick={() => onDelete(doc.id)}
                       className="p-1 hover:bg-[var(--background)] rounded-sm transition-colors"
                     >
@@ -833,16 +726,16 @@ function App() {
   const [complianceItems, setComplianceItems] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [auditData, setAuditData] = useState({ advisory_logs: [], document_uploads: [], compliance_updates: [] });
-  const [activeTab, setActiveTab] = useState("vault");
-  const [jurisdiction, setJurisdiction] = useState("NIGERIA (CAMA 2020)");
+  const [activeTab, setActiveTab] = useState("records");
+  const [jurisdiction, setJurisdiction] = useState("US (DELAWARE DGCL)");
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [useFirebaseStorage, setUseFirebaseStorage] = useState(isFirebaseAvailable());
+  const useFirebaseStorage = false; // External storage is disabled pending authorization.
   // Lead with the portfolio's enterprise administration surface. The
   // practitioner workspace remains one click away and loads its API data only
   // when requested.
-  const [workspaceMode, setWorkspaceMode] = useState("control");
+  const [workspaceMode, setWorkspaceMode] = useState("review");
 
   // Fetch deal rooms
   const fetchDealRooms = useCallback(async () => {
@@ -888,7 +781,7 @@ function App() {
 
   // Initial load
   useEffect(() => {
-    if (workspaceMode === "workspace") {
+    if (workspaceMode === "workspace" && BACKEND_URL) {
       fetchDealRooms();
     }
   }, [fetchDealRooms, workspaceMode]);
@@ -937,99 +830,21 @@ function App() {
     }
   };
 
-  // Upload document - try Firebase first, fallback to MongoDB
+  // Synthetic-data prototype: one bounded backend upload, no external storage fallback.
   const handleUploadDocument = async (file, folder) => {
-    if (!selectedDealRoom) {
-      toast.error("Please select a deal room first");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
+    if (!selectedDealRoom) { toast.error("Select a matter first"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("The prototype upload limit is 10 MiB"); return; }
+    setIsUploading(true); setUploadProgress(0);
     try {
-      // Try Firebase Storage first
-      if (useFirebaseStorage) {
-        try {
-          const firebaseResult = await uploadToFirebaseStorage(
-            file,
-            selectedDealRoom.id,
-            folder,
-            (progress) => setUploadProgress(progress)
-          );
-
-          // Save metadata to MongoDB backend
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("deal_room_id", selectedDealRoom.id);
-          formData.append("folder", folder);
-          formData.append("storage_path", firebaseResult.storagePath);
-          formData.append("download_url", firebaseResult.downloadURL);
-          formData.append("file_hash", firebaseResult.fileHash);
-
-          await axios.post(`${API}/documents/upload`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-
-          toast.success(`${file.name} uploaded to Firebase Storage`);
-        } catch (firebaseError) {
-          console.warn("Firebase upload failed, falling back to MongoDB:", firebaseError);
-          setUseFirebaseStorage(false);
-          // Fall through to MongoDB upload
-          throw firebaseError;
-        }
-      } else {
-        // Upload directly to MongoDB
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("deal_room_id", selectedDealRoom.id);
-        formData.append("folder", folder);
-
-        await axios.post(`${API}/documents/upload`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent) => {
-            const progress = (progressEvent.loaded / progressEvent.total) * 100;
-            setUploadProgress(progress);
-          },
-        });
-
-        toast.success(`${file.name} uploaded`);
-      }
-
-      await fetchDocuments(selectedDealRoom.id);
-      await fetchAuditTrail(selectedDealRoom.id);
-    } catch (error) {
-      console.error("Error uploading document:", error);
-      
-      // If Firebase failed, try MongoDB as fallback
-      if (useFirebaseStorage) {
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("deal_room_id", selectedDealRoom.id);
-          formData.append("folder", folder);
-
-          await axios.post(`${API}/documents/upload`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-            onUploadProgress: (progressEvent) => {
-              const progress = (progressEvent.loaded / progressEvent.total) * 100;
-              setUploadProgress(progress);
-            },
-          });
-
-          toast.success(`${file.name} uploaded (using MongoDB fallback)`);
-          await fetchDocuments(selectedDealRoom.id);
-          await fetchAuditTrail(selectedDealRoom.id);
-        } catch (fallbackError) {
-          toast.error("Failed to upload document");
-        }
-      } else {
-        toast.error("Failed to upload document");
-      }
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
+      const formData = new FormData();
+      formData.append("file", file); formData.append("deal_room_id", selectedDealRoom.id); formData.append("folder", folder);
+      await axios.post(API + "/documents/upload", formData, {
+        onUploadProgress: event => setUploadProgress(event.total ? Math.round(event.loaded / event.total * 100) : 0),
+      });
+      toast.success("Document stored. Contents have not been analyzed.");
+      await fetchDocuments(selectedDealRoom.id); await fetchAuditTrail(selectedDealRoom.id);
+    } catch (error) { toast.error(error.response?.data?.detail || "Upload failed"); }
+    finally { setIsUploading(false); setUploadProgress(0); }
   };
 
   // Delete document
@@ -1052,7 +867,7 @@ function App() {
       <Toaster position="top-right" richColors />
       
       {/* Sidebar */}
-      {workspaceMode === "workspace" && (
+      {workspaceMode === "workspace" && BACKEND_URL && (
         <Sidebar
           dealRooms={dealRooms}
           selectedDealRoom={selectedDealRoom}
@@ -1064,7 +879,7 @@ function App() {
       )}
 
       {/* Main content */}
-      <main className={`flex-1 flex flex-col h-full overflow-hidden ${workspaceMode === "workspace" ? "md:ml-[240px]" : ""}`}>
+      <main className={`flex-1 flex flex-col h-full overflow-hidden ${workspaceMode === "workspace" && BACKEND_URL ? "md:ml-[240px]" : ""}`}>
         {/* Header */}
         <Header
           selectedDealRoom={selectedDealRoom}
@@ -1075,24 +890,33 @@ function App() {
           setWorkspaceMode={setWorkspaceMode}
         />
 
+        <div hidden={workspaceMode !== "review"} className="flex-1 min-h-0"><MatterDesk /></div>
         {workspaceMode === "control" ? (
-          <CommandCenter />
+          <FirmOperations />
+        ) : workspaceMode === "review" ? null : !BACKEND_URL ? (
+          <section className="workspace-unavailable">
+            <h1>Research & Documents</h1>
+            <p>This public preview has no connected research or document service. Explore Matter Review with fictional evidence and review decisions.</p>
+            <p>The connected prototype requires a separately configured API and is intended for synthetic test data. It does not yet provide authenticated firm access or verified legal research.</p>
+            <button className="desk-button" onClick={() => setWorkspaceMode("review")}>Explore Matter Review</button>
+          </section>
         ) : (
           /* Content area */
           <div className="flex-1 flex overflow-hidden">
             {/* Chat panel */}
             <div className="flex-1 lg:border-r lg:border-[var(--navy-light)]">
               <ChatPanel
+                key={`${selectedDealRoom?.id || "global"}:${jurisdiction}`}
                 selectedDealRoom={selectedDealRoom}
                 jurisdiction={jurisdiction}
                 setJurisdiction={setJurisdiction}
               />
             </div>
 
-            {/* Right panel (Vault/Audit) */}
+            {/* Right panel (Records/Audit) */}
             <div className="hidden lg:block w-[360px] bg-[var(--background-secondary)]/50">
-              {activeTab === "vault" ? (
-                <DocumentVault
+              {activeTab === "records" ? (
+                <DocumentRecords
                   selectedDealRoom={selectedDealRoom}
                   documents={documents}
                   onUpload={handleUploadDocument}

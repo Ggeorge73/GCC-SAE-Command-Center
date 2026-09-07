@@ -34,7 +34,7 @@ jobs:
           REACT_APP_BACKEND_URL: http://127.0.0.1:8001
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run Control Center browser tests
+      - name: Run Law Suite browser tests
         run: npm run test:e2e
         env:
           CI: true
@@ -70,12 +70,15 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r backend/requirements-ci.txt
       - name: Compile backend sources
         run: python -m py_compile backend/server.py backend_test.py
+      - name: Run research safety tests
+        run: python -m unittest discover -s tests -p "test_*.py"
       - name: Start isolated API and run integration suite
         env:
           MONGO_URL: mongodb://127.0.0.1:27017
           DB_NAME: law_suite_ci_${{ github.run_id }}_${{ github.run_attempt }}
           CORS_ORIGINS: http://127.0.0.1:4173
           LAW_SUITE_AI_MODE: offline
+          LAW_SUITE_ALLOW_LOCAL_DEMO: "true"
           LAW_SUITE_API_URL: http://127.0.0.1:8001/api
           RUN_LIVE_AI_TESTS: false
         run: |

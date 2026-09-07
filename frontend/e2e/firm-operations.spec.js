@@ -3,13 +3,14 @@ const fs = require("node:fs/promises");
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByTestId("command-center")).toBeVisible();
+  await page.getByRole("button", { name: "Firm Operations", exact: true }).click();
+  await expect(page.getByTestId("firm-operations")).toBeVisible();
 });
 
-test("opens on the clearly labeled Control Center portfolio surface", async ({ page }) => {
-  const commandCenter = page.getByTestId("command-center");
+test("opens on the clearly labeled Firm Operations portfolio surface", async ({ page }) => {
+  const commandCenter = page.getByTestId("firm-operations");
 
-  await expect(commandCenter.getByRole("heading", { name: "Law Suite Control Center", level: 1 })).toBeVisible();
+  await expect(commandCenter.getByRole("heading", { name: "Law Suite Firm Operations", level: 1 })).toBeVisible();
   await expect(commandCenter.getByText("Sample portfolio data")).toBeVisible();
   await expect(commandCenter.getByText("Weekly active users")).toBeVisible();
   await expect(commandCenter.getByText("Governed interactions")).toBeVisible();
@@ -51,8 +52,22 @@ test("turns a recommendation into an action and exports the adoption report", as
   await page.getByTestId("export-adoption-report").click();
   const download = await downloadPromise;
 
-  expect(download.suggestedFilename()).toBe("law-suite-control-center-adoption-report.csv");
+  expect(download.suggestedFilename()).toBe("law-suite-firm-operations-adoption-report.csv");
   const csv = await fs.readFile(await download.path(), "utf8");
   expect(csv).toContain('"Practice group","Adoption","Advanced workflow depth","Users"');
   expect(csv).toContain('"Tax","54%","39%","88"');
+});
+
+
+test("exports the selected practice and records a sample access decision", async ({ page }) => {
+  await page.getByLabel("Practice group filter").selectOption("Tax");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByTestId("export-adoption-report").click();
+  const download = await downloadPromise;
+  const csv = await fs.readFile(await download.path(), "utf8");
+  expect(csv).toContain('"Tax"');
+  expect(csv).not.toContain('"Corporate"');
+  const row = page.getByRole("row", { name: /Sophie Laurent/ });
+  await row.getByRole("button", { name: "Record sample review" }).click();
+  await expect(row.getByRole("button", { name: "Review noted (demo)" })).toBeDisabled();
 });

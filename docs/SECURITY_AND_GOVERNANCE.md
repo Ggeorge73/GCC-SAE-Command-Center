@@ -8,7 +8,11 @@ Law Suite handles workflows that could contain privileged legal work and highly 
 
 ### Implemented in the prototype
 
-- SHA-256 file hashing
+- SHA-256 hashing of actual bytes, mismatch rejection, and a 10 MiB upload limit
+- Default-disabled data endpoints and local-only demo opt-in
+- Explicit unverified drafts and unavailable-service responses
+- Request-scoped model calls; no shared matter-keyed model history
+- Client-side synthetic review state machine and export (not an authorization boundary)
 - Matter-level document metadata
 - Basic audit aggregation for advisory logs, document uploads, and compliance changes
 - Environment-based backend connection settings
@@ -17,17 +21,17 @@ Law Suite handles workflows that could contain privileged legal work and highly 
 ### Not production-ready
 
 - No authenticated user session
-- No backend authorization or organization boundary enforcement
+- No production backend authorization or organization boundary enforcement; data routes are disabled by default, with opt-in loopback-only synthetic-data development
 - No implemented SSO, SCIM, or RBAC despite the portfolio UI model
-- Broad CORS configuration
-- Firebase rules are not included or verified
+- CORS defaults to a local origin; full deployment security remains unvalidated
+- Firebase rules are not included or verified; external storage registration and the frontend upload fallback are disabled
 - MongoDB fallback can store document bytes as base64
-- Uploaded documents are marked “indexed” without a real extraction/indexing pipeline
+- Uploaded documents are marked stored; no extraction/indexing pipeline exists
 - AI document context currently includes filenames, not governed document retrieval
 - No immutable or externally exportable audit log
 - No data-retention, deletion, legal-hold, or residency controls
 - No secrets-management integration
-- No security test suite or CI policy gate
+- API boundary regression tests exist; no penetration test or comprehensive security pipeline
 
 Do not deploy the prototype with privileged or personal data.
 
