@@ -1,42 +1,41 @@
 # Law Suite workspace design
 
-The redesign uses the supplied tiled analytics dashboard as a layout reference and Diamond Echo as the color reference. It does not reproduce either site's branding, content, or page composition.
+The workspace uses Diamond Echo's homepage typography and restrained visual style, with lighter blue surfaces requested for Law Suite. A persistent dark sidebar and top strip contrast with the full-width steel-blue workspace.
 
-![Law Suite portfolio](design/portfolio.png)
+![Law Suite dashboard](design/portfolio.png)
 
-[Research and document library](design/research.png) · [Firm Operations](design/operations.png)
+[Matter directory](design/directory.png) · [Research and document library](design/research.png) · [Firm Operations](design/operations.png)
 
-## Shared palette
+## Typography and palette
 
-These values were read from the computed CSS of [Diamond Echo](https://diamondecho-review.gbengag.chatgpt.site/) on September 7, 2026. `frontend/src/theme.css` is the shared source for native controls, Tailwind components, charts, dialogs, and all application surfaces.
+The computed styles of [Diamond Echo](https://diamondecho-review.gbengag.chatgpt.site/) were inspected on September 7, 2026: Sora for light display headings, Inter for body copy, uppercase labels with generous tracking, thin borders, and restrained arrow controls. Law Suite uses these same font families and hierarchy at sizes appropriate to an application. Its content remains Law Suite's own.
+
+`frontend/src/theme.css` supplies shared tokens for native controls, Tailwind components, charts, dialogs, and application surfaces. Workspace blues are deliberately lighter than the reference to meet the revised brief.
 
 | Role | Color |
 | --- | --- |
-| Deep background | `#060c13` |
-| Workspace background | `#0a141f` |
-| Panel | `#0f1c2a` |
-| Raised panel | `#142434` |
-| Steel | `#2d628c` |
+| Navigation background | `#0a141f` |
+| Recessed workspace | `#1b354b` |
+| Workspace background | `#244760` |
+| Panel | `#315570` |
+| Raised panel | `#3b627f` |
 | Bright steel | `#5e9cd0` |
-| Soft steel | `#a9c7e0` |
+| Soft steel | `#c5ddf0` |
 | Primary text | `#e5edf5` |
-| Secondary text | `#8ba0b3` |
-| Warm exception accent | `#d6a56d` |
-| Dividers / strong borders | `#e5edf521` / `#e5edf547` |
+| Secondary text | `#bdcedc` |
+| Exception text | `#f1c994` |
 
-## Application coverage
+## Navigation and application coverage
 
-- One persistent navigation bar across Matter Review, Research & Documents, and Administration. The former duplicate Matter Review sidebar and oversized hero are removed.
-- A compact portfolio board shows four metrics, review completion, evidence distribution, and review counts by practice. Every figure derives from current browser-local matter records. Practice chart buttons open the corresponding matter; source presence does not imply attorney review.
-- Evidence inspection, conflicts, version comparisons, draft editing, source dependencies, external text intake, handoff checks, review targets, history, value estimates, dialogs, and empty states use the same dark surfaces and hierarchy.
-- The disconnected Research & Documents preview includes per-matter fictional sources, local title/excerpt search, versioned source reading, and links into the selected matter's evidence, draft, and handoff tabs. Entering the library refreshes its snapshot of current local records. This is not a live research API or document ingestion pipeline.
-- The optional connected prototype shares the theme, with a research heading, question starters, document controls, and activity panel. Its mobile layout stacks the panels instead of hiding collections and documents. Data and model limitations remain visible.
-- Firm Operations retains its illustrative portfolio charts, filters, sample review actions, recommendations, and CSV exports with the shared colors.
+- Dashboard is an overview: four aggregate metrics, review completion, evidence distribution, the six largest practices by finding count, at most five matters needing attention, and three recent events. It never renders the full matter directory or workbench. Metric and practice actions open filtered directories; priority matters and recent events open the relevant detail page.
+- Matter Review is a dedicated searchable directory with practice and status filters, sorting, matching counts, and 12-row pagination. Search covers matter name, ID, client, and owner. Selected matters open their own review pages. A 500-record browser test exercises this UI; the shipped demonstration still contains three fictional matters. Production-scale retrieval remains a backend requirement.
+- Hash routes support direct links, refresh, and browser back/forward on GitHub Pages: `#/dashboard`, `#/matters`, `#/matters/LS-2401/issues`, `#/research`, and `#/operations`. Matter sections include issues, drafts, handoff, activity, and value. Unavailable matter IDs display a recovery action.
+- The sidebar remains visible on desktop and becomes a dismissible drawer on phone and tablet. Main pages use available width with narrow content gutters. The matter table scrolls within its container on small screens.
+- Evidence inspection, source comparison, drafts, external text intake, handoff requirements, targets, history, value estimates, and dialogs share the typography and lighter surfaces. Review decisions, source dependencies, approval invalidation, exports, and local persistence retain their existing behavior.
+- Research & Documents keeps local excerpt search, per-matter sources, source versions, and contextual navigation into draft/review pages. The optional connected prototype and Firm Operations share the theme. Operations retains sample charts, filters, access review, recommendations, and CSV export.
 
 ## Verification
 
-Existing attorney workflow and operations journeys remain the regression baseline. Additional browser journeys cover local excerpt search, matter isolation, navigation into the correct draft without losing edits, chart updates after review, updated source versions, and research/administration widths at 390, 768, and 1440 pixels.
+Browser regression journeys cover attorney review, source and draft changes, exports, local progress, research, and operations. New journeys cover a 500-matter portfolio, bounded summary rows, pagination, search, filtered drill-down, direct matter URLs, refresh, browser history, unavailable IDs, and directory containment at 390, 768, and 1600 pixels. Research and operations are also exercised on phone, tablet, and desktop. The production build and nine review-logic tests remain required checks.
 
-The connected prototype was also inspected with mocked API responses for research, stored documents, and activity, including phone layout and a sample chat round trip. This verifies UI behavior, not a live backend deployment.
-
-No database, authenticated identities, legal research provider, or new model integration is introduced by the redesign.
+No database, authenticated identity, legal research provider, or new model integration is introduced. Demo records and progress remain browser-local.

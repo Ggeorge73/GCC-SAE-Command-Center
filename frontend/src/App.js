@@ -43,6 +43,9 @@ import { Progress } from "@/components/ui/progress";
 import FirmOperations from "@/components/FirmOperations";
 import MatterDesk from "@/components/MatterDesk";
 import ResearchWorkspace from "@/components/ResearchWorkspace";
+import WorkspaceNavigation from "@/components/WorkspaceNavigation";
+import { readRoute, navigateTo } from "@/lib/workspaceNavigation";
+import "@/components/PortfolioShell.css";
 import {
   Select,
   SelectContent,
@@ -329,60 +332,26 @@ const Sidebar = ({
   );
 };
 
-// Header Component
-const Header = ({
-  workspaceMode,
-  setWorkspaceMode,
-  activeTab,
-  setActiveTab,
-}) => (
-  <header className="law-suite-header">
-    <div className="law-suite-header-brand">
-      <Scale size={20} />
-      <span>
-        Law Suite<small>LEGAL INTELLIGENCE WORKSPACE</small>
-      </span>
-    </div>
-    <nav aria-label="Law Suite sections">
-      {[
-        ["review", "Matter Review", Briefcase],
-        ["workspace", "Research & Documents", Search],
-      ].map(([id, label, Icon]) => (
+const Header = ({ route, activeTab, setActiveTab }) => (
+  <header className="portfolio-header">
+    <span>
+      WORKSPACE <ChevronRight size={13} />{" "}
+      <b>
+        {
+          {
+            dashboard: "OVERVIEW",
+            matters: "MATTER PORTFOLIO",
+            detail: "MATTER REVIEW",
+            research: "RESEARCH & DOCUMENTS",
+            operations: "FIRM OPERATIONS",
+          }[route.page]
+        }
+      </b>
+    </span>
+    <div>
+      {route.workspace === "workspace" && BACKEND_URL && (
         <button
-          type="button"
-          key={id}
-          aria-pressed={workspaceMode === id}
-          onClick={() => setWorkspaceMode(id)}
-        >
-          <Icon size={15} />
-          {label}
-        </button>
-      ))}
-      <details
-        className="law-suite-admin"
-        data-active={workspaceMode === "control"}
-      >
-        <summary>
-          <Building2 size={15} />
-          Administration
-        </summary>
-        <div>
-          <button
-            type="button"
-            aria-pressed={workspaceMode === "control"}
-            onClick={(event) => {
-              setWorkspaceMode("control");
-              event.currentTarget.closest("details").removeAttribute("open");
-            }}
-          >
-            Firm Operations
-          </button>
-          <p>Sample adoption, access, and firm reporting</p>
-        </div>
-      </details>
-      {workspaceMode === "workspace" && BACKEND_URL && (
-        <button
-          type="button"
+          className="desk-button secondary"
           onClick={() =>
             setActiveTab(activeTab === "records" ? "audit" : "records")
           }
@@ -390,10 +359,9 @@ const Header = ({
           {activeTab === "records" ? "View activity" : "View documents"}
         </button>
       )}
-    </nav>
-    <span className="law-suite-header-note">
-      PRODUCT PREVIEW · SYNTHETIC DATA ONLY
-    </span>
+      <span className="portfolio-preview-label">PRODUCT PREVIEW</span>
+      <span className="portfolio-avatar">LS</span>
+    </div>
   </header>
 );
 
@@ -924,8 +892,13 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const useFirebaseStorage = false; // External storage is disabled pending authorization.
   // Lead with the local practitioner demo; load the optional API only on request.
-  const [workspaceMode, setWorkspaceMode] = useState("review");
-  const [reviewRequest, setReviewRequest] = useState(null);
+  const [route, setRoute] = useState(readRoute);
+  const workspaceMode = route.workspace;
+  useEffect(() => {
+    const sync = () => setRoute(readRoute());
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
 
   // Fetch deal rooms
   const fetchDealRooms = useCallback(async () => {
@@ -1079,31 +1052,28 @@ function App() {
   };
 
   return (
-    <div className="h-screen w-full flex">
+    <div className="portfolio-app h-screen w-full flex">
       <Toaster position="top-right" richColors />
+      <WorkspaceNavigation route={route} />
 
       {/* Main content */}
       <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Header */}
         <Header
-          selectedDealRoom={selectedDealRoom}
+          route={route}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          useFirebaseStorage={useFirebaseStorage}
-          workspaceMode={workspaceMode}
-          setWorkspaceMode={setWorkspaceMode}
         />
 
         <div hidden={workspaceMode !== "review"} className="flex-1 min-h-0">
-          <MatterDesk request={reviewRequest} />
+          <MatterDesk route={route} onNavigate={navigateTo} />
         </div>
         {workspaceMode === "control" ? (
           <FirmOperations />
         ) : workspaceMode === "review" ? null : !BACKEND_URL ? (
           <ResearchWorkspace
             onOpenReview={(request) => {
-              setReviewRequest(request);
-              setWorkspaceMode("review");
+              navigateTo(`/matters/${request.matterId}/${request.section}`);
             }}
           />
         ) : (

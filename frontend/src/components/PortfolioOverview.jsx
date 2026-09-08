@@ -8,7 +8,7 @@ import {
 import { readiness } from "@/lib/matterWorkspace";
 
 // All numbers derive from the same local records as the attorney workbench.
-export default function PortfolioOverview({ state, navigate, selectMatter }) {
+export default function PortfolioOverview({ state, browse }) {
   const issues = state.matters.flatMap((matter) => matter.issues);
   const reviewed = issues.filter((issue) => issue.review).length;
   const gaps = state.matters.reduce(
@@ -24,6 +24,25 @@ export default function PortfolioOverview({ state, navigate, selectMatter }) {
     ["Source missing", "missing", "soft"],
     ["Outdated version", "stale", "muted"],
   ];
+  const practiceTotals = Object.values(
+    state.matters.reduce((groups, matter) => {
+      const group = (groups[matter.practice] ||= {
+        name: matter.practice,
+        total: 0,
+        reviewed: 0,
+      });
+      group.total += matter.issues.length;
+      group.reviewed += matter.issues.filter((issue) => issue.review).length;
+      return groups;
+    }, {}),
+  ).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  const maxTotal = Math.max(1, ...practiceTotals.map((group) => group.total));
+  const metricStatuses = [
+    "All statuses",
+    "Evidence exceptions",
+    "Recorded reviews",
+    "Partner review ready",
+  ];
   return (
     <section className="portfolio-board" aria-label="Portfolio readiness">
       <div className="portfolio-metrics" aria-label="Sample portfolio metrics">
@@ -31,7 +50,7 @@ export default function PortfolioOverview({ state, navigate, selectMatter }) {
           [
             "Active matters",
             state.matters.length,
-            "Across three US practices",
+            `Across ${practiceTotals.length} US practices`,
             Layers3,
           ],
           [
@@ -54,13 +73,19 @@ export default function PortfolioOverview({ state, navigate, selectMatter }) {
           ],
         ].map(([label, value, detail, Icon], index) => (
           <article className={`portfolio-metric metric-${index}`} key={label}>
-            <div>
-              <span>{label}</span>
-              <Icon size={17} />
-            </div>
-            <strong>{String(value).padStart(2, "0")}</strong>
-            <small>{detail}</small>
-            <div className="metric-rule" aria-hidden="true" />
+            <button
+              className="metric-action"
+              aria-label={`View ${label}`}
+              onClick={() => browse({ status: metricStatuses[index] })}
+            >
+              <div>
+                <span>{label}</span>
+                <Icon size={17} />
+              </div>
+              <strong>{String(value).padStart(2, "0")}</strong>
+              <small>{detail}</small>
+              <div className="metric-rule" aria-hidden="true" />
+            </button>
           </article>
         ))}
       </div>
@@ -91,8 +116,11 @@ export default function PortfolioOverview({ state, navigate, selectMatter }) {
               <small>{reviewed} reviews recorded</small>
             </div>
           </div>
-          <button className="analytics-link" onClick={() => navigate("issues")}>
-            Continue matter review <ArrowUpRight size={15} />
+          <button
+            className="analytics-link"
+            onClick={() => browse({ status: "Awaiting review" })}
+          >
+            Explore open reviews <ArrowUpRight size={15} />
           </button>
         </article>
         <article className="analytics-panel evidence-profile">
@@ -128,30 +156,36 @@ export default function PortfolioOverview({ state, navigate, selectMatter }) {
         <article className="analytics-panel practice-chart">
           <div className="panel-caption">
             <h2>Review by practice</h2>
-            <span>FICTIONAL PORTFOLIO</span>
+            <span>
+              {practiceTotals.length > 6
+                ? "TOP 6 BY FINDING COUNT"
+                : "PORTFOLIO TOTALS"}
+            </span>
           </div>
           <div className="practice-columns">
-            {state.matters.map((matter) => {
-              const n = matter.issues.filter((i) => i.review).length;
+            {practiceTotals.slice(0, 6).map((group) => {
+              const n = group.reviewed;
               return (
                 <button
-                  key={matter.id}
-                  onClick={() => selectMatter(matter)}
-                  aria-label={`Open ${matter.practice} matter: ${n} of ${matter.issues.length} reviews recorded`}
+                  key={group.name}
+                  onClick={() => browse({ practice: group.name })}
+                  aria-label={`Browse ${group.name}: ${n} of ${group.total} reviews recorded`}
                 >
                   <span className="column-value">
                     {n}
-                    <small> / {matter.issues.length}</small>
+                    <small> / {group.total}</small>
                   </span>
                   <div
                     className="practice-column"
-                    style={{ height: `${matter.issues.length * 30}px` }}
+                    style={{ height: `${(group.total / maxTotal) * 90}px` }}
                   >
                     <i
-                      style={{ height: `${(n / matter.issues.length) * 100}%` }}
+                      style={{
+                        height: `${group.total ? (n / group.total) * 100 : 0}%`,
+                      }}
                     />
                   </div>
-                  <span>{matter.practice}</span>
+                  <span>{group.name}</span>
                 </button>
               );
             })}
