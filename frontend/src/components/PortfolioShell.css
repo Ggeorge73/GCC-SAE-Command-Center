@@ -1,0 +1,900 @@
+/* Sora / Inter typography and architectural rules inspired by Diamond Echo's homepage. */
+.portfolio-app {
+  font-family: var(--font-ui);
+  background: var(--background);
+}
+.workspace-navigation {
+  width: 218px;
+  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 16px 22px;
+  background: var(--shell-bg);
+  border-right: 1px solid #e5edf526;
+  color: #a9c7e0;
+  overflow-y: auto;
+}
+.workspace-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  color: #e5edf5;
+  margin: 0 7px 42px;
+}
+.workspace-brand > svg {
+  color: #5e9cd0;
+  flex-shrink: 0;
+}
+.workspace-brand > span {
+  font: 500 14px/1.5 var(--font-display);
+  letter-spacing: 3px;
+  white-space: nowrap;
+}
+.workspace-brand small {
+  display: block;
+  margin-top: 5px;
+  font: 500 7px/1.4 var(--font-ui);
+  letter-spacing: 1.6px;
+  color: #8ba0b3;
+}
+.workspace-nav-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: #8ba0b3;
+  margin: 0 12px 14px;
+}
+.workspace-navigation nav > button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+  color: #a9c7e0;
+  padding: 13px 11px;
+  margin: 3px 0;
+  font-size: 11px;
+}
+.workspace-navigation nav > button small {
+  margin-left: auto;
+  font-size: 8px;
+  color: #8ba0b3;
+}
+.workspace-navigation nav > button[aria-current="page"] {
+  background: #1d3d55;
+  border-color: #5e9cd060;
+  color: #e5edf5;
+  box-shadow: inset 2px 0 #5e9cd0;
+}
+.workspace-navigation nav > button:hover {
+  background: #142434;
+  color: #e5edf5;
+}
+.workspace-navigation nav > .workspace-nav-label {
+  margin-top: 34px;
+}
+.workspace-administration summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px;
+  list-style: none;
+  font-size: 11px;
+}
+.workspace-administration summary::-webkit-details-marker {
+  display: none;
+}
+.workspace-administration summary:after {
+  content: "+";
+  margin-left: auto;
+  color: #8ba0b3;
+}
+.workspace-administration[open] summary:after {
+  content: "−";
+}
+.workspace-administration > button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 15px;
+  padding: 10px 12px;
+  width: calc(100% - 15px);
+  border-left: 1px solid #5e9cd060;
+  font-size: 11px;
+  color: #a9c7e0;
+}
+.workspace-administration > button[aria-current="page"] {
+  color: #e5edf5;
+  background: #142434;
+}
+.workspace-nav-footer {
+  margin-top: auto;
+  padding: 36px 12px 0;
+}
+.workspace-nav-footer svg {
+  color: #5e9cd0;
+  margin-bottom: 14px;
+}
+.workspace-nav-footer strong {
+  font: 300 21px/1.45 var(--font-display);
+  color: #e5edf5;
+  letter-spacing: -0.4px;
+}
+.workspace-nav-footer p {
+  border-top: 1px solid #e5edf526;
+  margin-top: 20px;
+  padding-top: 16px;
+  color: #8ba0b3;
+  font: 9px/1.8 var(--font-ui);
+}
+.workspace-menu-button,
+.workspace-nav-backdrop {
+  display: none;
+}
+.portfolio-header {
+  flex-shrink: 0;
+  height: 66px;
+  background: #102332;
+  color: #a9c7e0;
+  border-bottom: 1px solid #e5edf526;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  gap: 20px;
+}
+.portfolio-header > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+}
+.portfolio-header b {
+  color: #e5edf5;
+  font-weight: 500;
+}
+.portfolio-header > div {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.portfolio-preview-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+}
+.portfolio-preview-label:before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: #5e9cd0;
+}
+.portfolio-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e5edf547;
+  font-size: 9px;
+  color: #e5edf5;
+}
+.portfolio-app .desk-page,
+.portfolio-app .research-page,
+.portfolio-app .firm-operations > div {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 26px;
+  padding-right: 26px;
+}
+.portfolio-app .matter-desk,
+.portfolio-app .research-workspace,
+.portfolio-app .firm-operations {
+  background: var(--background);
+}
+.portfolio-app .desk-topline {
+  min-height: 48px;
+  color: var(--mist);
+}
+.portfolio-app .desk-topline > span {
+  font-size: 8px;
+  letter-spacing: 1.3px;
+}
+.portfolio-app .desk-topline .desk-demo {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  color: var(--mist);
+}
+.portfolio-app .desk-topline .desk-avatar {
+  display: none;
+}
+.portfolio-app .desk-eyebrow,
+.portfolio-app .research-kicker {
+  font: 500 9px/1.5 var(--font-ui);
+  letter-spacing: 2.4px;
+  color: var(--steel-soft);
+}
+.dashboard-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  padding: 25px 0 29px;
+}
+.dashboard-intro h1,
+.matter-directory .directory-heading h1 {
+  font: 300 40px/1.25 var(--font-display);
+  letter-spacing: -0.8px;
+  margin: 10px 0;
+}
+.dashboard-intro h1 em,
+.directory-heading h1 em {
+  color: var(--steel-soft);
+  font-style: normal;
+}
+.dashboard-intro p,
+.directory-heading p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--mist);
+}
+.portfolio-app .desk-button {
+  border-radius: 1px;
+  padding: 11px 15px;
+  font: 500 10px/1.5 var(--font-ui);
+  letter-spacing: 0.6px;
+}
+.portfolio-app .desk-button.secondary {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--ice);
+}
+.portfolio-app .desk-button.secondary:hover:not(:disabled) {
+  background: var(--panel-raised);
+}
+.portfolio-app .portfolio-metric {
+  padding: 0;
+  border-radius: 2px;
+  box-shadow: none;
+}
+.portfolio-app .portfolio-metric:after {
+  display: none;
+}
+.metric-action {
+  padding: 18px 20px 16px;
+  text-align: left;
+  width: 100%;
+  height: 100%;
+}
+.metric-action > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--steel-soft);
+  font-size: 10px;
+}
+.metric-action strong {
+  font: 300 44px/1.15 var(--font-display);
+  margin-top: 9px;
+  letter-spacing: -1.5px;
+}
+.metric-action small {
+  font-size: 10px;
+  color: var(--mist);
+}
+.metric-action svg {
+  color: var(--steel-soft);
+}
+.metric-action:hover {
+  background: var(--panel-raised);
+}
+.metric-rule {
+  background: linear-gradient(90deg, var(--steel-soft), #c5ddf010);
+  margin-top: 14px;
+}
+.portfolio-app .analytics-panel {
+  border-radius: 2px;
+  box-shadow: none;
+  padding: 17px 19px;
+}
+.portfolio-app .panel-caption h2 {
+  font: 400 13px/1.4 var(--font-display);
+  letter-spacing: -0.15px;
+}
+.portfolio-app .panel-caption > span {
+  color: var(--mist);
+  letter-spacing: 1px;
+}
+.portfolio-app .gauge-body {
+  padding: 18px 0 15px;
+  gap: 20px;
+}
+.portfolio-app .portfolio-ring strong,
+.portfolio-app .gauge-detail strong {
+  font-family: var(--font-display);
+  font-weight: 300;
+}
+.portfolio-app .portfolio-ring {
+  box-shadow: none;
+  background: conic-gradient(
+    var(--steel-soft) var(--progress),
+    var(--panel-raised) 0
+  );
+}
+.portfolio-app .analytics-link {
+  color: var(--ice);
+}
+.portfolio-app .practice-column {
+  background: var(--steel-bright);
+  border-color: #a9c7e080;
+}
+.portfolio-app .practice-column i {
+  background: var(--steel-soft);
+}
+.portfolio-app .practice-columns button {
+  flex: 1;
+  font-size: 9px;
+}
+.portfolio-app .practice-columns {
+  gap: 10px;
+  padding: 0;
+}
+.portfolio-app .chart-legend i {
+  background: var(--steel-soft);
+}
+.portfolio-app .chart-legend span + span i {
+  background: var(--steel-bright);
+}
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.dashboard-attention,
+.dashboard-recent {
+  padding: 19px;
+  border: 1px solid var(--border-color);
+  background: var(--panel);
+  min-width: 0;
+}
+.dashboard-attention > p {
+  font-size: 10px;
+  margin: 7px 0 16px;
+}
+.dashboard-attention > button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-color);
+  text-align: left;
+}
+.dashboard-attention > button:hover,
+.dashboard-recent > button:hover {
+  background: #e5edf508;
+}
+.dashboard-attention strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.dashboard-attention small {
+  display: block;
+  font-size: 9px;
+  color: var(--mist);
+  margin-top: 4px;
+}
+.dashboard-attention b {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--status-warning);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.dashboard-attention > button > svg {
+  color: var(--steel-soft);
+  flex-shrink: 0;
+}
+.dashboard-recent-empty {
+  padding: 24px 0 4px;
+}
+.dashboard-recent-empty > svg {
+  color: var(--steel-soft);
+  margin-bottom: 13px;
+}
+.dashboard-recent-empty h3 {
+  font: 300 19px/1.5 var(--font-display);
+}
+.dashboard-recent-empty p {
+  font-size: 11px;
+  max-width: 400px;
+}
+.dashboard-recent > button {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 0;
+  text-align: left;
+  border-top: 1px solid var(--border-color);
+  margin-top: 13px;
+}
+.dashboard-recent > button strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 500;
+}
+.dashboard-recent > button small {
+  font-size: 9px;
+  color: var(--mist);
+  display: block;
+  margin-top: 6px;
+}
+.dashboard-recent > button > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--steel-soft);
+}
+.directory-heading {
+  padding: 27px 0 25px;
+  border-bottom: 1px solid var(--border-color);
+}
+.directory-tools {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  padding: 20px 0;
+}
+.directory-tools > label {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--mist);
+  flex: 1;
+  min-width: 0;
+}
+.directory-tools select {
+  width: 100%;
+  font-size: 11px;
+  padding: 10px;
+  border-radius: 1px;
+}
+.directory-tools > .directory-search {
+  flex: 2.2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--abyss);
+  padding: 0 12px;
+  min-height: 40px;
+}
+.directory-search input {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 0;
+  width: 100%;
+  font-size: 11px;
+  outline: none;
+}
+.directory-search:focus-within {
+  outline: 2px solid var(--steel-soft);
+  outline-offset: 2px;
+}
+.directory-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  color: var(--mist);
+  font-size: 10px;
+  margin: 0 0 13px;
+}
+.directory-table-wrap {
+  position: relative;
+  overflow-x: auto;
+  background: var(--panel);
+  border: 1px solid var(--border-color);
+}
+.directory-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.directory-table th {
+  text-align: left;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-strong);
+  background: #e5edf507;
+  color: var(--steel-soft);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  font-weight: 500;
+}
+.directory-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--mist);
+}
+.directory-table tr:last-child td {
+  border-bottom: 0;
+}
+.directory-table tr:hover td {
+  background: #e5edf507;
+}
+.directory-table td small {
+  display: block;
+  color: var(--mist);
+  font-size: 9px;
+  margin-top: 6px;
+}
+.directory-table td:first-child {
+  min-width: 240px;
+  max-width: 360px;
+}
+.directory-matter-name {
+  text-align: left;
+  width: 100%;
+}
+.directory-matter-name strong {
+  font: 400 13px/1.5 var(--font-display);
+  color: var(--ice);
+}
+.directory-matter-name:hover strong {
+  text-decoration: underline;
+}
+.directory-pagination {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 10px;
+  margin: 19px 0;
+}
+.directory-pagination > span {
+  margin-right: auto;
+  font-size: 11px;
+  color: var(--mist);
+}
+.detail-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+}
+.detail-navigation > span {
+  color: var(--mist);
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.portfolio-app .desk-workbench {
+  border-radius: 2px;
+  box-shadow: none;
+}
+.portfolio-app .desk-matter-heading h2 {
+  font: 300 30px/1.4 var(--font-display);
+}
+.portfolio-app .desk-matter-heading p {
+  font-size: 12px;
+}
+.portfolio-app .desk-evidence h3,
+.portfolio-app .desk-panel-intro h3,
+.portfolio-app .desk-readiness-banner h3,
+.portfolio-app .desk-value h3 {
+  font: 300 24px/1.45 var(--font-display);
+}
+.portfolio-app .desk-tabs button {
+  color: var(--mist);
+}
+.portfolio-app .desk-tabs button[aria-selected="true"] {
+  color: var(--ice);
+  border-color: var(--steel-soft);
+}
+.portfolio-app .desk-source,
+.portfolio-app .desk-working-statement,
+.portfolio-app .desk-issue-list > button,
+.portfolio-app .desk-draft-paper,
+.portfolio-app .desk-dependencies,
+.portfolio-app .desk-prerequisites,
+.portfolio-app .desk-readiness-banner {
+  border-radius: 2px;
+}
+.portfolio-app .desk-text-button {
+  color: var(--steel-soft);
+}
+.portfolio-app .desk-source blockquote,
+.portfolio-app .desk-source-document p,
+.portfolio-app .desk-draft-statement textarea {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.9;
+}
+.portfolio-app .desk-draft-paper > h3,
+.portfolio-app .desk-dialog h2,
+.portfolio-app .research-reader h3 {
+  font-family: var(--font-display);
+  font-weight: 300;
+}
+.portfolio-app .desk-footer {
+  padding: 20px 0;
+}
+.portfolio-app .desk-footer strong {
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  font-weight: 400;
+}
+.portfolio-app .research-heading h1,
+.portfolio-app .firm-operations h1 {
+  font: 300 38px/1.3 var(--font-display);
+  letter-spacing: -0.8px;
+}
+.portfolio-app .research-heading {
+  margin-top: 12px;
+}
+.portfolio-app .research-page {
+  padding-top: 28px;
+}
+.portfolio-app .research-paths button,
+.portfolio-app .research-library,
+.portfolio-app .research-sources > button,
+.portfolio-app .research-reader,
+.portfolio-app .firm-operations article,
+.portfolio-app .firm-operations section {
+  border-radius: 2px;
+}
+.portfolio-app .research-reader section p {
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+.portfolio-app .research-library h2,
+.portfolio-app .firm-operations h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.portfolio-app .research-kicker {
+  color: var(--steel-soft);
+}
+.portfolio-app .firm-operations .font-sans {
+  font-family: var(--font-ui);
+}
+.portfolio-app .firm-operations h1.font-sans,
+.portfolio-app .firm-operations h2.font-sans {
+  font-family: var(--font-display);
+}
+.portfolio-app .desk-dialog {
+  background: var(--panel);
+}
+@media (min-width: 1800px) {
+  .portfolio-app .desk-page,
+  .portfolio-app .research-page,
+  .portfolio-app .firm-operations > div {
+    padding-inline: 32px;
+  }
+  .dashboard-intro h1 {
+    font-size: 48px;
+  }
+  .portfolio-app .metric-action strong {
+    font-size: 52px;
+  }
+}
+@media (max-width: 1200px) {
+  .workspace-navigation {
+    width: 194px;
+    padding-inline: 12px;
+  }
+  .workspace-brand {
+    margin-inline: 3px;
+    gap: 8px;
+  }
+  .workspace-brand > span {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .workspace-navigation nav > button {
+    font-size: 10px;
+    gap: 8px;
+    padding-inline: 9px;
+  }
+  .workspace-navigation nav > button small {
+    display: none;
+  }
+  .portfolio-app .desk-page,
+  .portfolio-app .research-page,
+  .portfolio-app .firm-operations > div {
+    padding-inline: 20px;
+  }
+  .dashboard-intro h1 {
+    font-size: 34px;
+  }
+  .metric-action {
+    padding: 16px;
+  }
+  .directory-tools {
+    flex-wrap: wrap;
+  }
+  .directory-tools > .directory-search {
+    flex-basis: 100%;
+  }
+  .portfolio-app .practice-columns {
+    height: 149px;
+  }
+}
+@media (max-width: 900px) {
+  .workspace-navigation {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 41;
+    width: 240px;
+    padding-top: 70px;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.2s,
+      visibility 0.2s;
+  }
+  .workspace-navigation.is-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .workspace-navigation nav > button {
+    font-size: 12px;
+  }
+  .workspace-brand {
+    margin-bottom: 30px;
+  }
+  .workspace-brand > span {
+    font-size: 14px;
+  }
+  .workspace-menu-button {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    height: 32px;
+    width: 32px;
+    z-index: 42;
+    border: 1px solid #e5edf540;
+    background: #102332;
+    color: #e5edf5;
+  }
+  .workspace-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: #060c1388;
+  }
+  .portfolio-header {
+    padding-left: 65px;
+    padding-right: 18px;
+  }
+  .portfolio-header > span {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .portfolio-preview-label {
+    display: none;
+  }
+  .dashboard-bottom {
+    grid-template-columns: 1fr;
+  }
+  .directory-table {
+    min-width: 760px;
+  }
+  .portfolio-app .desk-matter-heading h2 {
+    font-size: 27px;
+  }
+}
+@media (max-width: 600px) {
+  .portfolio-header {
+    height: 64px;
+  }
+  .portfolio-header > span {
+    font-size: 7px;
+    gap: 7px;
+  }
+  .portfolio-avatar {
+    width: 25px;
+    height: 25px;
+    font-size: 8px;
+  }
+  .portfolio-header > div {
+    gap: 7px;
+  }
+  .portfolio-app .desk-page,
+  .portfolio-app .research-page,
+  .portfolio-app .firm-operations > div {
+    padding-inline: 14px;
+  }
+  .portfolio-app .desk-topline > span {
+    display: none;
+  }
+  .portfolio-app .desk-topline > div {
+    width: 100%;
+  }
+  .portfolio-app .desk-topline .desk-demo {
+    margin-right: auto;
+    font-size: 8px;
+  }
+  .dashboard-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 23px;
+  }
+  .dashboard-intro h1,
+  .matter-directory .directory-heading h1 {
+    font-size: 30px;
+    line-height: 1.35;
+  }
+  .dashboard-intro > .desk-button {
+    padding: 9px 12px;
+  }
+  .metric-action {
+    padding: 15px 13px;
+  }
+  .metric-action > div:first-child {
+    font-size: 9px;
+  }
+  .metric-action svg {
+    width: 14px;
+  }
+  .metric-action strong {
+    font-size: 36px;
+  }
+  .metric-action small {
+    font-size: 9px;
+  }
+  .directory-tools > label {
+    flex-basis: calc(50% - 6px);
+  }
+  .directory-tools > .directory-search {
+    flex-basis: 100%;
+  }
+  .directory-count {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .dashboard-attention,
+  .dashboard-recent {
+    padding: 16px;
+  }
+  .dashboard-attention strong {
+    font-size: 11px;
+  }
+  .dashboard-attention b {
+    font-size: 8px;
+  }
+  .portfolio-app .research-heading h1,
+  .portfolio-app .firm-operations h1 {
+    font-size: 30px;
+  }
+  .portfolio-app .desk-evidence h3 {
+    font-size: 21px;
+  }
+  .portfolio-app .desk-matter-heading h2 {
+    font-size: 25px;
+  }
+}

@@ -1,21 +1,30 @@
+const {
+  goSection,
+  openNavigation,
+  openMatter,
+} = require("./navigation-helpers");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/matters/LS-2401/issues");
 });
 
 test("opens an independent Law Suite review experience without legacy product naming", async ({
   page,
 }) => {
+  await goSection(page, "Dashboard");
   await expect(page).toHaveTitle("Law Suite | Evidence before delivery");
   await expect(
-    page.getByRole("heading", { name: "Your matters, in motion." }),
+    page.getByRole("heading", {
+      name: "Clarity in every matter. Perspective for the firm.",
+    }),
   ).toBeVisible();
   await expect(page.getByText("Interactive demonstration")).toBeVisible();
   await expect(
     page.getByText(/Harvey|Vault|Command Center|Learned Silk/i),
   ).toHaveCount(0);
+  await goSection(page, "Matter Review");
   await page.getByLabel("Search matters").fill("not a matter");
   await expect(
     page.getByText("No matters match your search.", { exact: false }),
@@ -24,7 +33,7 @@ test("opens an independent Law Suite review experience without legacy product na
   await page
     .getByLabel("Filter matters by practice")
     .selectOption("Litigation");
-  await expect(page.locator(".desk-matter-card")).toHaveCount(1);
+  await expect(page.locator(".directory-table tbody tr")).toHaveCount(1);
 });
 
 test("blocks unresolved evidence and exports an honest draft packet", async ({
@@ -54,7 +63,7 @@ test("blocks unresolved evidence and exports an honest draft packet", async ({
 test("requires documented review, preserves it across sections, and recalculates when reopened", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
+  await openMatter(page, "LS-2402");
   await page
     .getByLabel("Simulated participant")
     .selectOption("Maya Chen · Partner");
@@ -94,13 +103,8 @@ test("requires documented review, preserves it across sections, and recalculates
     page.getByRole("heading", { name: "Handoff is blocked" }),
   ).toBeVisible();
   await page.getByLabel("Client AI-use terms reviewed").check();
-  await page.getByText("Administration", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Firm Operations", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Matter Review", exact: true })
-    .click();
+  await goSection(page, "Firm Operations");
+  await openMatter(page, "LS-2402", "handoff");
   await expect(
     page.getByRole("heading", { name: "Ready for supervising lawyer review" }),
   ).toBeVisible();
@@ -130,7 +134,7 @@ test("keeps matter decisions isolated and represents negative estimated value", 
   await page
     .getByRole("button", { name: "Record review", exact: true })
     .click();
-  await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
+  await openMatter(page, "LS-2402");
   await page.getByRole("tab", { name: "Decision history" }).click();
   await expect(
     page.getByText("No decisions recorded for this matter yet."),
@@ -145,8 +149,9 @@ test("mobile navigation and review controls remain usable without page overflow"
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await openNavigation(page);
   await expect(page.getByText("Administration", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
+  await openMatter(page, "LS-2402");
   await expect(
     page.getByRole("button", { name: "Record review", exact: true }),
   ).toBeVisible();
@@ -155,10 +160,7 @@ test("mobile navigation and review controls remain usable without page overflow"
       .locator(".matter-desk")
       .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
   ).toBe(true);
-  await page.getByText("Administration", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Firm Operations", exact: true })
-    .click();
+  await goSection(page, "Firm Operations");
   await expect(
     page.getByRole("heading", { name: "Law Suite Firm Operations" }),
   ).toBeVisible();
