@@ -10,8 +10,14 @@ module.exports = defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI
-    ? [["github"], ["html", { outputFolder: "playwright-report", open: "never" }]]
-    : [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
+    ? [
+        ["github"],
+        ["html", { outputFolder: "playwright-report", open: "never" }],
+      ]
+    : [
+        ["list"],
+        ["html", { outputFolder: "playwright-report", open: "never" }],
+      ],
   use: {
     baseURL,
     trace: "retain-on-failure",
@@ -30,7 +36,8 @@ module.exports = defineConfig({
           BROWSER: "none",
           HOST: "127.0.0.1",
           PORT: "4173",
-          REACT_APP_BACKEND_URL: "http://127.0.0.1:8001",
+          // Browser journeys exercise the same disconnected demo as GitHub Pages.
+          REACT_APP_BACKEND_URL: "",
         },
       },
   projects: [

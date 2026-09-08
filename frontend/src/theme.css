@@ -1,0 +1,113 @@
+/* Exact Diamond Echo color tokens, inspected from the reference site on Sep 7, 2026.
+   https://diamondecho-review.gbengag.chatgpt.site/ */
+:root {
+  color-scheme: dark;
+  --font-ui:
+    "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --abyss: #060c13;
+  --navy: #0a141f;
+  --panel: #0f1c2a;
+  --panel-raised: #142434;
+  --steel: #2d628c;
+  --steel-bright: #5e9cd0;
+  --steel-soft: #a9c7e0;
+  --ice: #e5edf5;
+  --mist: #8ba0b3;
+  --background: var(--navy);
+  --background-secondary: var(--panel);
+  --background-tertiary: var(--panel-raised);
+  --foreground: var(--ice);
+  --foreground-muted: var(--mist);
+  --primary: var(--steel-bright);
+  --primary-foreground: var(--abyss);
+  --primary-hover: var(--steel-soft);
+  --primary-active: var(--steel);
+  --accent-gold: var(--steel-bright);
+  --accent-gold-dim: #5e9cd018;
+  --navy-light: #243342;
+  --status-success: var(--steel-soft);
+  --status-info: var(--steel-bright);
+  --status-warning: #d6a56d;
+  --status-error: #d6a56d;
+  --border-color: #e5edf521;
+  --border-strong: #e5edf547;
+  --radius: 0.5rem;
+  --shadow-card: 0 5px 18px #060c1340;
+  --shadow-glow: 0 0 15px #5e9cd015;
+  --card: var(--panel);
+  --card-foreground: var(--ice);
+  --popover: var(--panel-raised);
+  --popover-foreground: var(--ice);
+  --secondary: var(--panel-raised);
+  --secondary-foreground: var(--ice);
+  --muted: var(--panel-raised);
+  --muted-foreground: var(--mist);
+  --accent: var(--panel-raised);
+  --accent-foreground: var(--ice);
+  --destructive: #a56b37;
+  --destructive-foreground: var(--ice);
+  --border: var(--border-color);
+  --input: var(--border-strong);
+  --ring: var(--steel-bright);
+  --chart-1: var(--steel-bright);
+  --chart-2: var(--steel-soft);
+  --chart-3: var(--steel);
+  --chart-4: var(--mist);
+  --chart-5: var(--status-warning);
+}
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-ui);
+}
+button,
+a,
+input,
+textarea,
+select,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+summary {
+  cursor: pointer;
+}
+button {
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s,
+    transform 0.18s;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+:focus-visible {
+  outline: 2px solid var(--steel-bright);
+  outline-offset: 3px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--mist);
+  opacity: 0.75;
+}
+input[type="file"]::file-selector-button {
+  background: var(--panel-raised);
+  color: var(--steel-soft);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 5px 8px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
