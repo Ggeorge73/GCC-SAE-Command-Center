@@ -12,13 +12,10 @@ import {
   FileCheck2,
   FileText,
   GitBranch,
-  LayoutDashboard,
-  ListChecks,
   RotateCcw,
   Scale,
   Search,
   ShieldCheck,
-  Sparkles,
   Users,
   X,
 } from "lucide-react";
@@ -33,7 +30,9 @@ import {
   targetDate,
 } from "@/lib/matterWorkspace";
 import { exportMemorandum } from "@/lib/reviewMemorandum";
+import PortfolioOverview from "./PortfolioOverview";
 import "./MatterDesk.css";
+import "./WorkspaceLayout.css";
 
 const labels = {
   supported: "Source available",
@@ -88,7 +87,7 @@ function Dialog({ title, children, close }) {
     </dialog>
   );
 }
-export default function MatterDesk() {
+export default function MatterDesk({ request }) {
   const [state, setState] = useState(loadWorkspace);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [query, setQuery] = useState("");
@@ -103,6 +102,19 @@ export default function MatterDesk() {
   const latestState = useRef(state);
   latestState.current = state;
   const workbench = useRef(null);
+  useEffect(() => {
+    if (!request) return;
+    const next = changeWorkspace(latestState.current, {
+      type: "select",
+      matterId: request.matterId,
+    });
+    latestState.current = next;
+    setState(next);
+    setSelectedIssue(null);
+    setView(request.section);
+    setNotice("");
+    workbench.current?.scrollIntoView({ block: "start" });
+  }, [request]);
   const matter = state.matters.find((m) => m.id === state.selectedId);
   const importText = matter.importDraft || "";
   const provider = matter.importProvider || "External AI tool";
@@ -111,10 +123,6 @@ export default function MatterDesk() {
   const issue =
     matter.issues.find((i) => i.id === selectedIssue) || matter.issues[0];
   const assessment = readiness(matter);
-  const allIssues = state.matters.flatMap((m) => m.issues);
-  const reviewed = allIssues.filter((i) => i.review).length;
-  const gaps = state.matters.reduce((n, m) => n + readiness(m).gaps.length, 0);
-  const progress = Math.round((reviewed / allIssues.length) * 100);
   const events = state.events.filter((e) => e.matterId === matter.id);
   const visible = state.matters.filter(
     (m) =>
@@ -188,60 +196,6 @@ export default function MatterDesk() {
 
   return (
     <div className="matter-desk" data-testid="matter-desk">
-      <aside className="desk-rail" aria-label="Workspace overview">
-        <div className="desk-monogram">
-          <span>
-            <Scale size={23} />
-          </span>
-          Law Suite<small>02</small>
-        </div>
-        <span className="desk-rail-label">YOUR WORKSPACE</span>
-        <button
-          className="desk-rail-active"
-          onClick={() =>
-            document
-              .querySelector(".matter-desk")
-              .scrollTo({ top: 0, behavior: "smooth" })
-          }
-        >
-          <LayoutDashboard size={18} />
-          Overview
-        </button>
-        <button onClick={() => navigate("issues")}>
-          <ListChecks size={18} />
-          Matter review <b>{allIssues.length - reviewed}</b>
-        </button>
-        <button onClick={() => navigate("drafts")}>
-          <FileText size={18} />
-          Drafts & sources
-        </button>
-        <button onClick={() => navigate("activity")}>
-          <Activity size={18} />
-          Decision history
-        </button>
-        <div className="desk-rail-case">
-          <div className="desk-orb">
-            <GitBranch size={24} />
-          </div>
-          <strong>
-            Every decision.
-            <br />
-            Connected.
-          </strong>
-          <p>Follow the evidence from first finding to final review.</p>
-          <button onClick={() => setModal({ type: "help" })}>
-            Explore the demo <ArrowUpRight size={15} />
-          </button>
-        </div>
-        <div className="desk-rail-bottom">
-          <ShieldCheck size={20} />
-          <span>
-            Private browser demo
-            <br />
-            <small>Fictional matters · No live services</small>
-          </span>
-        </div>
-      </aside>
       <div className="desk-page">
         <div className="desk-topline">
           <span>
@@ -290,86 +244,15 @@ export default function MatterDesk() {
             Reset demo
           </button>
         </div>
-        <section className="desk-hero" aria-label="Portfolio readiness">
-          <div>
-            <span className="desk-hero-tag">
-              <Sparkles size={14} />
-              YOUR REVIEW BRIEF
-            </span>
-            <h2>
-              {gaps
-                ? `${gaps} evidence questions.`
-                : "Evidence scope addressed."}
-              <br />
-              <span>Let’s move them forward.</span>
-            </h2>
-            <p>
-              {allIssues.length - reviewed} open reviews across{" "}
-              {state.matters.length} matters. See the source, record your
-              judgment, and give the next step an owner.
-            </p>
-            <button onClick={() => navigate("issues")}>
-              Continue matter review <ArrowRight size={17} />
-            </button>
-          </div>
-          <div className="desk-hero-progress">
-            <div
-              className="desk-progress-ring"
-              style={{ "--progress": `${progress}%` }}
-            >
-              <div>
-                <strong>
-                  {progress}
-                  <small>%</small>
-                </strong>
-                <span>reviews recorded</span>
-              </div>
-            </div>
-            <div className="desk-hero-legend">
-              <span>
-                <i />
-                {reviewed} reviewed
-              </span>
-              <span>
-                <i />
-                {allIssues.length - reviewed} awaiting judgment
-              </span>
-            </div>
-            <small>Based on your demo activity</small>
-          </div>
-        </section>
-        <section className="desk-stats" aria-label="Sample portfolio metrics">
-          {[
-            [
-              "Active matters",
-              state.matters.length,
-              "Three US practice areas",
-              LayoutDashboard,
-            ],
-            [
-              "Evidence exceptions",
-              gaps,
-              "Source resolution needed",
-              GitBranch,
-            ],
-            ["Recorded reviews", reviewed, "Saved in this browser", FileCheck2],
-            [
-              "Partner review ready",
-              state.matters.filter((m) => readiness(m).ready).length,
-              "Prerequisites completed",
-              ShieldCheck,
-            ],
-          ].map(([label, count, sub, Icon], index) => (
-            <div key={label}>
-              <span className={`desk-stat-icon tone-${index}`}>
-                <Icon size={19} />
-              </span>
-              <span>{label}</span>
-              <strong>{String(count).padStart(2, "0")}</strong>
-              <small>{sub}</small>
-            </div>
-          ))}
-        </section>
+        <PortfolioOverview
+          state={state}
+          navigate={navigate}
+          selectMatter={(m) => {
+            dispatch({ type: "select", matterId: m.id });
+            setSelectedIssue(m.issues[0].id);
+            navigate("issues");
+          }}
+        />
         <div className="desk-section-title">
           <div>
             <h2>

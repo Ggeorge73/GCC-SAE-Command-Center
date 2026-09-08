@@ -12,13 +12,15 @@ This is an independent prototype. All Matter Review excerpts, names, and amounts
 
 | Surface | Implemented | Boundary |
 |---|---|---|
-| Matter Review | Layered dashboard; three US scenarios; saved notes and assignments; full sample sources; version comparisons and dependent review invalidation; working drafts; reference inspection; participant-stamped checks; partner approval; HTML memorandum and JSON export; internal targets | Browser-local fictional data. Survives navigation and refresh; Reset demo clears it. Comparisons and source links are scripted. Text imports check identifiers/versions only, without AI or legal verification |
+| Matter Review | Compact portfolio metrics and evidence charts; three US scenarios; saved notes and assignments; full sample sources; version comparisons and dependent review invalidation; working drafts; reference inspection; participant-stamped checks; partner approval; HTML memorandum and JSON export; internal targets | Browser-local fictional data. Survives navigation and refresh; Reset demo clears it. Comparisons and source links are scripted. Text imports check identifiers/versions only, without AI or legal verification |
 | Firm Operations | Sample charts, identity filters, sample access review, recommendation state, filtered CSV export | No live identity provider, telemetry, permissions changes, or persistence |
-| Research & Documents | Optional local FastAPI prototype for matter metadata, bounded storage, unverified model drafts | Data API disabled by default; no authentication/tenancy, extraction, retrieval, citator, or immutable audit |
+| Research & Documents | Fictional source library with local excerpt search, versioned source previews, and contextual draft/review navigation. Optional local FastAPI prototype for matter metadata, bounded storage, unverified model drafts | Library search uses browser-local fixtures only. Data API disabled by default; no authentication/tenancy, extraction, legal retrieval, citator, or immutable audit |
 
 Evidence quality, work ownership, and internal approval are separate. Save or escalate blocked findings; supported findings can be reviewed, while unsupported propositions require resolution or explicit exclusion from reliance. Exclusions remain visible in drafts and exports and do not turn missing evidence into verified evidence. Outstanding assignments require an explicit task resolution. Complete prerequisites and select the simulated partner to approve the internal memorandum. Source or draft changes revoke affected reviews and approval. No action files or sends work product.
 
 ## Assessment and roadmap
+
+- [Workspace UI design](docs/UI_DESIGN.md): reference palette, application coverage, and validation scope.
 
 - [Codebase, website, and competitive review](docs/LAW_SUITE_REVIEW.md): findings, original positioning, US firm priorities, architecture, and evaluation plan.
 - [Security and governance](docs/SECURITY_AND_GOVERNANCE.md): boundaries and production requirements.
