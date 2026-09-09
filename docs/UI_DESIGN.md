@@ -1,5 +1,7 @@
 # Law Suite workspace design
 
+This document records the preceding design. The September 8 ZIP handoff supersedes it; see [the current handoff implementation](VISION_HANDOFF.md).
+
 The workspace uses Diamond Echo's homepage typography and restrained visual style, with lighter blue surfaces requested for Law Suite. A persistent dark sidebar and top strip contrast with the full-width steel-blue workspace.
 
 ![Law Suite dashboard](design/portfolio.png)

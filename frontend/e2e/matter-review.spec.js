@@ -17,10 +17,12 @@ test("opens an independent Law Suite review experience without legacy product na
   await expect(page).toHaveTitle("Law Suite | Evidence before delivery");
   await expect(
     page.getByRole("heading", {
-      name: "Clarity in every matter. Perspective for the firm.",
+      name: "General Statistics",
     }),
   ).toBeVisible();
-  await expect(page.getByText("Interactive demonstration")).toBeVisible();
+  await expect(
+    page.getByText("Fictional firm data · Browser-local demonstration"),
+  ).toBeVisible();
   await expect(
     page.getByText(/Harvey|Vault|Command Center|Learned Silk/i),
   ).toHaveCount(0);
@@ -150,7 +152,9 @@ test("mobile navigation and review controls remain usable without page overflow"
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openNavigation(page);
-  await expect(page.getByText("Administration", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Legal workspace", exact: true }),
+  ).toBeVisible();
   await openMatter(page, "LS-2402");
   await expect(
     page.getByRole("button", { name: "Record review", exact: true }),

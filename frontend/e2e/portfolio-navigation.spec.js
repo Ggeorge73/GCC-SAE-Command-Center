@@ -7,7 +7,7 @@ test("500 matters stay summarized and the directory paginates, searches and filt
   await page.goto("/");
   await expect(
     page.getByRole("button", { name: "View Active matters" }),
-  ).toContainText("03");
+  ).toContainText("3");
   await page.evaluate(() => {
     const key = "law-suite-workspace-v2";
     const state = JSON.parse(localStorage.getItem(key));
@@ -24,7 +24,7 @@ test("500 matters stay summarized and the directory paginates, searches and filt
   await expect(
     page.getByRole("button", { name: "View Active matters" }),
   ).toContainText("500");
-  await expect(page.locator(".dashboard-attention > button")).toHaveCount(5);
+  await expect(page.locator(".v-practice-table>div>button")).toHaveCount(3);
   await expect(page.locator(".desk-workbench, .directory-table")).toHaveCount(
     0,
   );
@@ -107,13 +107,13 @@ test("summary and directory use the viewport with a mobile navigation drawer", a
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    if (width < 901)
+    if (width < 1100)
       await expect(
         page.getByRole("button", { name: "Open navigation", exact: true }),
       ).toBeVisible();
     else {
       const box = await page.locator(".matter-directory").boundingBox();
-      expect(box.width).toBeGreaterThan(1250);
+      expect(box.width).toBeGreaterThan(1200);
     }
   }
 });

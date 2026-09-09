@@ -43,9 +43,15 @@ import { Progress } from "@/components/ui/progress";
 import FirmOperations from "@/components/FirmOperations";
 import MatterDesk from "@/components/MatterDesk";
 import ResearchWorkspace from "@/components/ResearchWorkspace";
-import WorkspaceNavigation from "@/components/WorkspaceNavigation";
+import {
+  VisionFrame,
+  VisionNavigation as WorkspaceNavigation,
+  VisionHeader,
+} from "@/components/vision/VisionShell";
+import VisionPages from "@/components/vision/VisionPages";
 import { readRoute, navigateTo } from "@/lib/workspaceNavigation";
 import "@/components/PortfolioShell.css";
+import "@/components/vision/Vision.css";
 import {
   Select,
   SelectContent,
@@ -1052,14 +1058,14 @@ function App() {
   };
 
   return (
-    <div className="portfolio-app h-screen w-full flex">
+    <VisionFrame>
       <Toaster position="top-right" richColors />
       <WorkspaceNavigation route={route} />
 
       {/* Main content */}
       <main className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Header */}
-        <Header
+        <VisionHeader
           route={route}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -1068,7 +1074,9 @@ function App() {
         <div hidden={workspaceMode !== "review"} className="flex-1 min-h-0">
           <MatterDesk route={route} onNavigate={navigateTo} />
         </div>
-        {workspaceMode === "control" ? (
+        {workspaceMode === "vision" ? (
+          <VisionPages route={route} />
+        ) : workspaceMode === "control" ? (
           <FirmOperations />
         ) : workspaceMode === "review" ? null : !BACKEND_URL ? (
           <ResearchWorkspace
@@ -1122,7 +1130,7 @@ function App() {
           </div>
         )}
       </main>
-    </div>
+    </VisionFrame>
   );
 }
 

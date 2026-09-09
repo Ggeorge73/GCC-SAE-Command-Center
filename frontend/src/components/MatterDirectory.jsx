@@ -4,16 +4,17 @@ import { readiness, targetDate } from "@/lib/matterWorkspace";
 const PAGE_SIZE = 12;
 
 export default function MatterDirectory({ matters, route, openMatter }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(route.query || "");
   const [practice, setPractice] = useState(route.practice || "All practices");
   const [status, setStatus] = useState(route.status || "All statuses");
   const [sort, setSort] = useState("target");
   const [page, setPage] = useState(1);
   useEffect(() => {
+    setQuery(route.query || "");
     setPractice(route.practice || "All practices");
     setStatus(route.status || "All statuses");
     setPage(1);
-  }, [route.practice, route.status]);
+  }, [route.practice, route.status, route.query]);
   const practices = [...new Set(matters.map((m) => m.practice))].sort();
   const visible = useMemo(
     () =>
@@ -59,7 +60,7 @@ export default function MatterDirectory({ matters, route, openMatter }) {
         <h1>
           Every matter.
           <br />
-          <em>A clear next step.</em>
+          <em> A clear next step.</em>
         </h1>
         <p>Find the engagement, focus the review, and follow the evidence.</p>
       </header>

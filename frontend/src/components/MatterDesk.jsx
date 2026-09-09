@@ -30,7 +30,7 @@ import {
   targetDate,
 } from "@/lib/matterWorkspace";
 import { exportMemorandum } from "@/lib/reviewMemorandum";
-import PortfolioOverview from "./PortfolioOverview";
+import DefaultDashboard from "./vision/DefaultDashboard";
 import MatterDirectory from "./MatterDirectory";
 import { directoryPath } from "@/lib/workspaceNavigation";
 import "./MatterDesk.css";
@@ -200,7 +200,9 @@ export default function MatterDesk({ route, onNavigate }) {
   return (
     <div className="matter-desk" data-testid="matter-desk">
       <div className="desk-page">
-        <div className="desk-topline">
+        <div
+          className={`desk-topline ${route.page === "dashboard" ? "v-dashboard-topline" : ""}`}
+        >
           <span>
             FIRM PORTFOLIO <ChevronRight size={13} />{" "}
             {route.page === "dashboard"
@@ -243,122 +245,7 @@ export default function MatterDesk({ route, onNavigate }) {
             </span>
           </div>
         </div>
-        {route.page === "dashboard" && (
-          <>
-            <div className="dashboard-intro">
-              <div>
-                <span className="desk-eyebrow">01 / THE FIRM AT A GLANCE</span>
-                <h1>
-                  Clarity in every matter.
-                  <br />
-                  <em>Perspective for the firm.</em>
-                </h1>
-                <p>Your portfolio, its priorities, and the decisions ahead.</p>
-              </div>
-              <button
-                className="desk-button secondary"
-                onClick={() => onNavigate("/matters")}
-              >
-                Explore all matters <ArrowUpRight size={16} />
-              </button>
-            </div>
-            <PortfolioOverview
-              state={state}
-              browse={(filters) => onNavigate(directoryPath(filters))}
-            />
-            <div className="dashboard-bottom">
-              <section className="dashboard-attention">
-                <div className="panel-caption">
-                  <h2>Needs attention</h2>
-                  <button
-                    className="desk-text-button"
-                    onClick={() =>
-                      onNavigate(
-                        directoryPath({ status: "Evidence exceptions" }),
-                      )
-                    }
-                  >
-                    View exceptions <ArrowUpRight size={14} />
-                  </button>
-                </div>
-                <p>
-                  Up to five matters with the most unresolved evidence
-                  questions.
-                </p>
-                {[...state.matters]
-                  .filter((m) => readiness(m).gaps.length > 0)
-                  .sort(
-                    (a, b) =>
-                      readiness(b).gaps.length - readiness(a).gaps.length,
-                  )
-                  .slice(0, 5)
-                  .map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => onNavigate(`/matters/${m.id}/issues`)}
-                    >
-                      <span>
-                        <strong>{m.name}</strong>
-                        <small>
-                          {m.id} · {m.practice}
-                        </small>
-                      </span>
-                      <b>{readiness(m).gaps.length} exceptions</b>
-                      <ArrowUpRight size={16} />
-                    </button>
-                  ))}
-                {!state.matters.some((m) => readiness(m).gaps.length > 0) && (
-                  <p className="desk-empty">
-                    No unresolved evidence exceptions in the current scope.
-                  </p>
-                )}
-              </section>
-              <section className="dashboard-recent">
-                <div className="panel-caption">
-                  <h2>Recent decisions</h2>
-                  <span>LAST 3 EVENTS</span>
-                </div>
-                {state.events.length ? (
-                  [...state.events]
-                    .reverse()
-                    .slice(0, 3)
-                    .map((e) => (
-                      <button
-                        key={e.id}
-                        onClick={() =>
-                          onNavigate(`/matters/${e.matterId}/activity`)
-                        }
-                      >
-                        <Activity size={16} />
-                        <span>
-                          <strong>{e.action}</strong>
-                          <small>
-                            {e.actor} · {time(e.at)}
-                          </small>
-                        </span>
-                        <ArrowUpRight size={14} />
-                      </button>
-                    ))
-                ) : (
-                  <div className="dashboard-recent-empty">
-                    <Activity size={25} />
-                    <h3>Every decision leaves a trail.</h3>
-                    <p>
-                      Recorded reviews and source changes appear here as your
-                      team works.
-                    </p>
-                    <button
-                      className="desk-text-button"
-                      onClick={() => onNavigate("/matters")}
-                    >
-                      Start a matter review <ArrowUpRight size={14} />
-                    </button>
-                  </div>
-                )}
-              </section>
-            </div>
-          </>
-        )}
+        {route.page === "dashboard" && <DefaultDashboard state={state} />}
         {route.page === "matters" && (
           <MatterDirectory
             matters={state.matters}

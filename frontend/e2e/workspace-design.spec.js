@@ -63,15 +63,13 @@ test("portfolio charts follow attorney review and source versions refresh in the
     .getByRole("button", { name: "Record review", exact: true })
     .click();
   await goSection(page, "Dashboard");
-  await expect(
-    page.getByRole("img", { name: "14% of findings have a recorded review" }),
-  ).toHaveCount(1);
+
   await expect(
     page
-      .locator(".portfolio-metric")
+      .locator(".v-metric")
       .filter({ hasText: "Recorded reviews" })
       .locator("strong"),
-  ).toHaveText("01");
+  ).toHaveText("1");
   await openMatter(page, "LS-2401", "drafts");
   await page.getByRole("button", { name: "Load next sample revision" }).click();
   await goSection(page, "Research & Documents");

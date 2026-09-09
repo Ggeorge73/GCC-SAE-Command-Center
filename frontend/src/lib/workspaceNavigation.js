@@ -1,7 +1,19 @@
+import { visionRoute } from "@/components/vision/routes";
 const sections = ["issues", "drafts", "handoff", "activity", "value"];
 
 export function readRoute() {
   const [path, query = ""] = window.location.hash.slice(1).split("?");
+  const catalog = visionRoute(path);
+  if (
+    catalog &&
+    !["default", "matters", "research", "operations"].includes(catalog.kind)
+  )
+    return {
+      workspace: "vision",
+      page: catalog.kind,
+      path: catalog.path,
+      title: catalog.title,
+    };
   const parts = (path || "/dashboard").split("/").filter(Boolean);
   if (parts[0] === "research")
     return { workspace: "workspace", page: "research" };
@@ -20,6 +32,7 @@ export function readRoute() {
     return {
       workspace: "review",
       page: "matters",
+      query: params.get("query") || "",
       practice: params.get("practice") || "All practices",
       status: params.get("status") || "All statuses",
     };
