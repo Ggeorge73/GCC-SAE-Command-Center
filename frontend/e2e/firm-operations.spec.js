@@ -1,12 +1,14 @@
+const {
+  goSection,
+  openNavigation,
+  openMatter,
+} = require("./navigation-helpers");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await page.getByText("Administration", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Firm Operations", exact: true })
-    .click();
+  await goSection(page, "Firm Operations");
   await expect(page.getByTestId("firm-operations")).toBeVisible();
 });
 

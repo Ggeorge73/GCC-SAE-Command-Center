@@ -5,8 +5,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ["Playfair Display", "Georgia", "serif"],
-        sans: ["Manrope", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        serif: ["Sora", "Inter", "sans-serif"],
+        sans: ["Inter", "Arial", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },
       borderRadius: {

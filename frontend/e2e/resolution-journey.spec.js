@@ -1,3 +1,8 @@
+const {
+  goSection,
+  openNavigation,
+  openMatter,
+} = require("./navigation-helpers");
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs/promises");
 const note =
@@ -12,7 +17,7 @@ async function record(page) {
     .click();
 }
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/matters/LS-2401/issues");
 });
 
 test("blocked issue notes survive switching and refresh, with a separate escalation history", async ({
@@ -40,7 +45,7 @@ test("blocked issue notes survive switching and refresh, with a separate escalat
   ).toBeDisabled();
   await tab(page, "Decision history").click();
   await expect(page.getByRole("tabpanel")).toContainText("Escalated N2");
-  await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
+  await openMatter(page, "LS-2402");
   await expect(page.getByRole("tabpanel")).not.toContainText("Escalated N2");
 });
 
@@ -168,14 +173,14 @@ test("external text checks references, retains unverified status and source dial
   await expect(page.locator(".desk-import-results")).toContainText(
     "Sources changed after inspection",
   );
-  await page.getByRole("button", { name: /LS-2402 Litigation/ }).click();
-  await expect(page.getByRole("textbox", { name: "External draft", exact: true })).toHaveValue(
-    "",
-  );
-  await page.getByRole("button", { name: /LS-2401 Corporate/ }).click();
-  await expect(page.getByRole("textbox", { name: "External draft", exact: true })).toHaveValue(
-    /Consent required/,
-  );
+  await openMatter(page, "LS-2402");
+  await expect(
+    page.getByRole("textbox", { name: "External draft", exact: true }),
+  ).toHaveValue("");
+  await openMatter(page, "LS-2401");
+  await expect(
+    page.getByRole("textbox", { name: "External draft", exact: true }),
+  ).toHaveValue(/Consent required/);
 });
 
 test("draft edits reopen review, target math records assumptions, and reset clears local progress", async ({
@@ -204,6 +209,7 @@ test("draft edits reopen review, target math records assumptions, and reset clea
   await page.getByRole("button", { name: "Reset demo", exact: true }).click();
   await page.getByRole("button", { name: "Reset saved demo" }).click();
   await page.reload();
+  await openMatter(page, "LS-2401", "issues");
   await expect(page.getByLabel("Review note")).toHaveValue("");
   await tab(page, "Decision history").click();
   await expect(page.getByRole("tabpanel")).toContainText(
