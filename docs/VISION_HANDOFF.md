@@ -10,6 +10,8 @@ The Default dashboard preserves the reference composition: two-by-two KPIs on th
 
 ## Globe implementation
 
+The original globe described below was replaced on September 9 by the user's requested [animated Lady Justice artwork](LADY_JUSTICE_HERO.md). The rest of the handoff design remains in place.
+
 `GlobeScene.jsx` uses a transparent Three.js WebGL renderer and the point data named in the handoff. The dataset contains 13,054 geographic samples in an equirectangular coordinate plane. A single buffer geometry and shader render fine diamond-shaped blue points with orientation-based fading. This is an independent implementation, not the vendor's original globe component.
 
 The current implementation uses an 80-second revolution and a selected axis tilt. These are implementation choices, not measured vendor parameters. Animation uses elapsed time, caps draws at approximately 30fps, caps pixel ratio at 1.5, pauses when hidden, offscreen, or in an inactive window, and renders a still view for reduced motion. The globe and Three.js load separately from the initial application bundle. WebGL initialization/context loss uses a geographic SVG still fallback. Observers, animation callbacks, GPU geometry, materials, and renderer are disposed on unmount.

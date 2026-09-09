@@ -12,7 +12,7 @@ This is an independent prototype. All Matter Review excerpts, names, and amounts
 
 | Surface | Implemented | Boundary |
 |---|---|---|
-| Dashboard | Two-by-two portfolio metrics, practice summary, rotating geographic globe, and illustrative reviewer/research activity; metric and practice links into filtered matter directories | Summary only; all counts derive from local sample records |
+| Dashboard | Two-by-two portfolio metrics, practice summary, animated blue particle Lady Justice, and illustrative reviewer/research activity; metric and practice links into filtered matter directories | Summary only; all counts derive from local sample records |
 | Matter Review | Searchable, filtered, sortable directory with 12-row pages; dedicated matter URLs; three US scenarios; saved notes and assignments; full sample sources; version comparisons and dependent review invalidation; working drafts; reference inspection; participant-stamped checks; partner approval; HTML memorandum and JSON export; internal targets | Browser-local fictional data. Survives navigation and refresh; Reset demo clears it. Comparisons and source links are scripted. Text imports check identifiers/versions only, without AI or legal verification |
 | Firm Operations | Sample charts, identity filters, sample access review, recommendation state, filtered CSV export | No live identity provider, telemetry, permissions changes, or persistence |
 | Research & Documents | Fictional source library with local excerpt search, versioned source previews, and contextual draft/review navigation. Optional local FastAPI prototype for matter metadata, bounded storage, unverified model drafts | Library search uses browser-local fixtures only. Data API disabled by default; no authentication/tenancy, extraction, legal retrieval, citator, or immutable audit |
@@ -24,6 +24,8 @@ Evidence quality, work ownership, and internal approval are separate. Save or es
 The new Vision UI handoff is implemented in the review branch, with all 32 reference routes adapted to Law Suite: attorney profiles, teams, portfolios, reports, account preferences, sample billing, engagement services, intake, calendar, coordination board, analytics, and six account-access layouts. Existing matter review and research pages share the glass design system. New interactions are local demonstrations; no live authentication, calendar, billing, or messaging service is introduced. See [the handoff implementation](docs/VISION_HANDOFF.md) for the route mapping, assets, and verification scope.
 
 ## Assessment and roadmap
+
+- [Lady Justice artwork](docs/LADY_JUSTICE_HERO.md): dashboard animation, reference adaptation, and motion accessibility.
 
 - [Workspace UI design](docs/UI_DESIGN.md): reference palette, application coverage, and validation scope.
 
