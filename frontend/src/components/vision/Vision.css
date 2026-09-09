@@ -622,6 +622,17 @@
   display: block;
   max-width: 100%;
 }
+.v-justice {
+  mix-blend-mode: screen;
+}
+.v-justice > .v-justice-still {
+  position: absolute;
+  inset: 0;
+  padding: 4%;
+  opacity: 0.8;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(to top, transparent, black 5%);
+}
 .v-kpis {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -134,7 +134,7 @@ test("account forms validate but do not persist or transmit passwords", async ({
   );
   await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
 });
-test("globe renders a still fallback when WebGL is unavailable", async ({
+test("Lady Justice renders a still fallback when WebGL is unavailable", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -150,7 +150,7 @@ test("globe renders a still fallback when WebGL is unavailable", async ({
     "true",
   );
   await expect(
-    page.getByAltText("Blue geographic point-cloud globe, still view"),
+    page.getByAltText("Blue particle Lady Justice, still view"),
   ).toBeVisible();
 });
 test("mobile sidebar traps focus and closes with Escape", async ({ page }) => {

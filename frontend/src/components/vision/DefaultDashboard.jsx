@@ -12,7 +12,7 @@ import {
 import { Panel, Metric, DemoNotice } from "./Glass";
 import { Bars, TrendChart } from "./VisionCharts";
 import { lazy, Suspense } from "react";
-const GlobeScene = lazy(() => import("./GlobeScene"));
+const JusticeScene = lazy(() => import("./JusticeScene"));
 import { readiness } from "@/lib/matterWorkspace";
 import { navigateTo, directoryPath } from "@/lib/workspaceNavigation";
 export default function DefaultDashboard({ state }) {
@@ -43,11 +43,11 @@ export default function DefaultDashboard({ state }) {
           fallback={
             <div
               className="v-globe v-globe-loading"
-              aria-label="Loading globe"
+              aria-label="Loading Lady Justice"
             />
           }
         >
-          <GlobeScene />
+          <JusticeScene />
         </Suspense>
         <div className="v-default-left">
           <div className="v-kpis">
