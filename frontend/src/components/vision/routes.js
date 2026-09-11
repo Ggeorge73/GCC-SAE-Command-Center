@@ -45,6 +45,7 @@ export const visionGroups = [
       ["/applications/wizard", "Matter intake", "wizard"],
       ["/applications/data-tables", "Matter register", "data-tables"],
       ["/applications/calendar", "Legal calendar", "calendar"],
+      ["/applications/practice-desk", "Practice desk", "practice-desk"],
     ],
   },
   {

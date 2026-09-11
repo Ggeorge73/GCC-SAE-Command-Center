@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRecords, validateFeature } from "@/lib/localRecords";
 import { ArrowUpRight, Check, FileText, Scale, Users } from "lucide-react";
 import { navigateTo } from "@/lib/workspaceNavigation";
 export const demoPeople = [
@@ -73,7 +73,16 @@ export function Field({ label, ...props }) {
   return (
     <label className="v-field">
       <span>{label}</span>
-      <input {...props} />
+      <input
+        pattern={
+          props.required &&
+          (!props.type || props.type === "text" || props.type === "tel")
+            ? ".*\\S.*"
+            : undefined
+        }
+        maxLength={250}
+        {...props}
+      />
     </label>
   );
 }
@@ -156,36 +165,9 @@ export function DemoNotice() {
   );
 }
 export function useLocal(key, initial) {
-  const [value, setValue] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("law-suite-vision-" + key));
-      return saved ?? initial;
-    } catch {
-      return initial;
-    }
-  });
-  const [error, setError] = useState("");
-  return [
-    value,
-    (next) => {
-      setValue((old) => {
-        const result = typeof next === "function" ? next(old) : next;
-        try {
-          localStorage.setItem(
-            "law-suite-vision-" + key,
-            JSON.stringify(result),
-          );
-          setError("");
-        } catch {
-          setError(
-            "Browser storage is unavailable. Changes last for this session only.",
-          );
-        }
-        return result;
-      });
-    },
-    error,
-  ];
+  return useRecords("law-suite-vision-" + key, initial, (value) =>
+    validateFeature(key, value, initial),
+  );
 }
 export function StatusMessage({ children }) {
   return children ? (

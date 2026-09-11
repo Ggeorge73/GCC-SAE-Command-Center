@@ -84,7 +84,17 @@ export function VisionFrame({ children }) {
     >
       <div
         className={`portfolio-app vision-app h-screen w-full flex ${preferences.mini ? "v-mini" : ""} ${preferences.opaque ? "v-opaque" : ""} ${preferences.fixed ? "v-fixed-header" : ""}`}
-        style={{ "--v-accent": preferences.accent }}
+        style={{
+          "--v-accent":
+            {
+              "#0075ff": "#0063d6",
+              "#01b574": "#00784c",
+              "#2cd9ff": "#08748e",
+              "#e31a1a": "#bc1818",
+              "#7551ff": "#7551ff",
+              "#f5a623": "#915000",
+            }[preferences.accent] || "#6041ba",
+        }}
       >
         {children}
         <button

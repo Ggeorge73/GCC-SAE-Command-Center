@@ -25,7 +25,7 @@
   --panel: #111738;
   --panel-raised: #1c2446;
   --steel: #254e92;
-  --steel-bright: #0075ff;
+  --steel-bright: #8cc8ff;
   --steel-soft: #d7e3f7;
   --ice: #fff;
   --mist: #a0aec0;
@@ -810,7 +810,7 @@
   min-height: 38px;
 }
 .v-button:hover {
-  filter: brightness(1.12);
+  filter: brightness(0.95);
   transform: translateY(-1px);
 }
 .v-button.secondary {
@@ -1420,7 +1420,7 @@
   place-items: center;
 }
 .v-pagination button:not(:disabled) {
-  background: #0075ff;
+  background: #0063d6;
 }
 .v-empty {
   padding: 35px;
@@ -1465,7 +1465,7 @@
   display: block;
   white-space: normal;
   text-align: left;
-  background: #0075ff;
+  background: #0063d6;
   border-radius: 7px;
   color: #fff;
   padding: 4px 5px;

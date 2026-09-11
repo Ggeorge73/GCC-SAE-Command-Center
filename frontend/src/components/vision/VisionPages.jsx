@@ -45,6 +45,8 @@ import {
 } from "./Workflows";
 import { loadWorkspace, readiness } from "@/lib/matterWorkspace";
 import { navigateTo } from "@/lib/workspaceNavigation";
+import { useServices } from "./serviceRecords";
+import PracticeDesk from "./PracticeDesk";
 
 function ProjectCards() {
   const matters = loadWorkspace().matters;
@@ -361,7 +363,7 @@ function Reports() {
                 .filter((p) =>
                   p.join(" ").toLowerCase().includes(query.toLowerCase()),
                 )
-                .map((p, i) => (
+                .map((p) => (
                   <tr key={p[0]}>
                     <td>
                       <span className="v-inline">
@@ -371,7 +373,7 @@ function Reports() {
                     </td>
                     <td>{p[2]}</td>
                     <td>{p[1]}</td>
-                    <td>{[28, 24, 36, 18, 22][i]}</td>
+                    <td>{{ MC: 28, DF: 24, PR: 36, AM: 18, JL: 22 }[p[3]]}</td>
                     <td>
                       <Badge tone="green">Active</Badge>
                     </td>
@@ -977,32 +979,46 @@ function Alerts() {
   );
 }
 function Services({ kind }) {
-  const [data, setData, error] = useLocal("service", {
-    name: "Acquisition diligence review",
-    practice: "Corporate",
-    fee: "4800",
-    lead: "Maya Chen",
-    scope:
-      "Evidence mapping, consent exceptions, and a qualified internal memorandum.",
-    materials:
-      "Supply agreements, disclosure schedules, and closing checklist.",
-  });
+  const {
+    data,
+    update: setData,
+    error,
+    proposals,
+    setSelected,
+  } = useServices();
+  const requestId = new URLSearchParams(window.location.hash.split("?")[1]).get(
+    "request",
+  );
+  const request = loadWorkspace().matters.find((m) => m.id === requestId);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [format, setFormat] = useState("Internal memorandum");
   if (kind === "order-list") return <Register requests />;
+  if (kind === "order-details" && !request)
+    return (
+      <Panel
+        title="Request not found"
+        subtitle="Select an engagement request to open its client and matter details."
+      >
+        <LinkButton to="/ecommerce/orders/order-list">
+          Engagement requests
+        </LinkButton>
+      </Panel>
+    );
   if (kind === "order-details")
     return (
       <Panel
         className="v-order-detail"
-        title="Engagement request LS-R104"
+        title={`Engagement request ${request.id}-R`}
         subtitle="Submitted September 8, 2026 · fictional request"
       >
         <div className="v-inline between">
           <div>
-            <h2>Aster Manufacturing</h2>
-            <p>Acquisition diligence review · Project Northstar</p>
+            <h2>{request.client}</h2>
+            <p>
+              {request.id} · {request.name}
+            </p>
           </div>
           <Badge tone="amber">Scope review</Badge>
         </div>
@@ -1036,26 +1052,34 @@ function Services({ kind }) {
             <dl className="v-info-list">
               <div>
                 <dt>Client</dt>
-                <dd>Aster Manufacturing</dd>
+                <dd>{request.client}</dd>
               </div>
               <div>
                 <dt>Lead</dt>
-                <dd>Maya Chen</dd>
+                <dd>{request.owner}</dd>
               </div>
               <div>
                 <dt>Scope</dt>
-                <dd>Acquisition diligence</dd>
+                <dd>{request.summary}</dd>
               </div>
               <div>
                 <dt>Illustrative estimate</dt>
-                <dd>$4,800</dd>
+                <dd>Requires agreed scope and fee review</dd>
               </div>
             </dl>
-            <LinkButton to="/matters/LS-2401/issues">
+            <LinkButton to={`/matters/${request.id}/issues`}>
               Open related matter
             </LinkButton>
           </div>
         </div>
+      </Panel>
+    );
+  if (!data)
+    return (
+      <Panel title="Service proposal not found">
+        <LinkButton to="/ecommerce/products/new-product">
+          New service
+        </LinkButton>
       </Panel>
     );
   if (kind === "edit-product")
@@ -1154,7 +1178,28 @@ function Services({ kind }) {
             <p>Acquisition diligence</p>
           </div>
           <div className="v-service-info">
-            <Badge>Corporate practice</Badge>
+            <label className="v-field">
+              <span>Saved service proposals</span>
+              <select
+                value={data.id}
+                onChange={(e) => {
+                  setSelected(e.target.value);
+                  navigateTo(
+                    `/ecommerce/products/product-page?service=${encodeURIComponent(e.target.value)}`,
+                  );
+                }}
+              >
+                {proposals.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} · {p.status}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Badge>
+              {data.practice} · {data.status}
+            </Badge>
+            <small>{data.id}</small>
             <h1>{data.name}</h1>
             <p>{data.scope}</p>
             <h2>
@@ -1196,7 +1241,10 @@ function Services({ kind }) {
             >
               Prepare request
             </Button>
-            <LinkButton secondary to="/ecommerce/products/edit-product">
+            <LinkButton
+              secondary
+              to={`/ecommerce/products/edit-product?service=${encodeURIComponent(data.id)}`}
+            >
               Edit service
             </LinkButton>
             <StatusMessage>{message}</StatusMessage>
@@ -1470,6 +1518,7 @@ export default function VisionPages({ route }) {
   const kind = route.page;
   let content;
   if (kind === "crm") content = <CRM />;
+  else if (kind === "practice-desk") content = <PracticeDesk />;
   else if (kind === "profile") content = <Profile />;
   else if (kind === "teams") content = <Teams />;
   else if (kind === "projects")
@@ -1539,6 +1588,23 @@ export default function VisionPages({ route }) {
           </div>
         )}
       {content}
+      {[
+        "billing",
+        "invoice",
+        "crm",
+        "general",
+        "timeline",
+        "order-list",
+      ].includes(kind) && (
+        <Panel
+          title="Continue the matter workflow"
+          subtitle="Open intake review, attorney time, draft invoices, client updates, research instructions, or closing records."
+        >
+          <LinkButton to="/applications/practice-desk">
+            Open practice desk
+          </LinkButton>
+        </Panel>
+      )}
       <footer className="v-footer">
         <span>Law Suite · Evidence before delivery.</span>
         <div>

@@ -76,7 +76,13 @@ jobs:
         run: python -m py_compile backend/server.py backend_test.py
       - name: Run research safety tests
         run: python -m unittest discover -s tests -p "test_*.py"
-      - name: Start isolated API and run integration suite
+      - name: Verify interrupted initialization on disposable MongoDB
+        env:
+          MONGO_URL: mongodb://127.0.0.1:27017
+          DB_NAME: law_suite_ci_${{ github.run_id }}_${{ github.run_attempt }}_recovery
+          RUN_MONGO_RECOVERY_TESTS: "true"
+        run: python -m unittest tests.test_real_mongo_recovery
+      - name: Run existing API integration journeys
         env:
           MONGO_URL: mongodb://127.0.0.1:27017
           DB_NAME: law_suite_ci_${{ github.run_id }}_${{ github.run_attempt }}

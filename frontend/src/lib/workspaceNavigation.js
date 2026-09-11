@@ -13,6 +13,7 @@ export function readRoute() {
       page: catalog.kind,
       path: catalog.path,
       title: catalog.title,
+      query,
     };
   const parts = (path || "/dashboard").split("/").filter(Boolean);
   if (parts[0] === "research")
