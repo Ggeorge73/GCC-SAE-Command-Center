@@ -120,7 +120,7 @@ class LawSuiteAPITester:
             return False
             
     def test_compliance_checklists_auto_creation(self) -> bool:
-        """Test that compliance checklists are auto-created for Nigeria deals"""
+        """New matters start with pending internal review tasks, not legal conclusions."""
         if not self.created_deal_room_id:
             self.log_result("Compliance Auto-Creation", False, "No deal room to test with")
             return False
@@ -131,18 +131,25 @@ class LawSuiteAPITester:
             if response.status_code == 200:
                 checklists = response.json()
                 if isinstance(checklists, list) and len(checklists) >= 3:
-                    # Check for expected Nigeria compliance items
-                    expected_items = ["CAMA 2020", "NOTAP", "SEC Nigeria"]
-                    found_items = []
-                    
-                    for checklist in checklists:
-                        for expected in expected_items:
-                            if expected in checklist.get("name", ""):
-                                found_items.append(expected)
-                                
-                    success = len(found_items) >= 2  # At least 2 out of 3 expected items
+                    expected_items = {
+                        "Confirm scope and responsible lawyer",
+                        "Document conflicts and engagement review",
+                        "Identify applicable obligations and verified deadlines",
+                    }
+                    found_items = {item.get("name") for item in checklists}
+                    success = (
+                        len(checklists) == 3
+                        and found_items == expected_items
+                        and len({item.get("id") for item in checklists}) == 3
+                        and all(
+                            item.get("deal_room_id") == self.created_deal_room_id
+                            and item.get("status") == "pending"
+                            and item.get("due_date") is None
+                            for item in checklists
+                        )
+                    )
                     self.log_result("Compliance Auto-Creation", success, 
-                                    f"Found {len(checklists)} checklists, Expected items found: {found_items}")
+                                    f"Expected three unique, pending internal review tasks without inferred deadlines; got: {checklists}")
                     return success
                 else:
                     self.log_result("Compliance Auto-Creation", False, f"Expected at least 3 checklists, got {len(checklists) if isinstance(checklists, list) else 0}")

@@ -200,8 +200,7 @@ async def initialize_matter(deal_room, idempotency_key):
     doc['_id'] = identity
     doc['initialization_hash'] = payload_hash
     
-    # Create default compliance checklists based on jurisdiction
-    default_checklists = []
+    # Start internal review tasks; jurisdiction alone does not establish obligations.
     default_checklists = [
         {"name": "Confirm scope and responsible lawyer", "regulatory_body": "Internal planning — applicability unverified", "status": "pending"},
         {"name": "Document conflicts and engagement review", "regulatory_body": "Internal planning — not conflicts clearance", "status": "pending"},

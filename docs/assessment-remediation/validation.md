@@ -15,3 +15,5 @@ Local verification:
 After that full run, a small wizard control was added to start another draft without overwriting the earlier saved intake/proposal, with one additional regression case. The final build passed, followed by **5/5 Practice desk browser cases**, including that new case. The complete suite now contains 66 browser cases. CI runs the full inventory against the pull request commit.
 
 The local HTML report is generated in `frontend/playwright-report/index.html`; GitHub CI uploads its own report artifact for the exact checked commit. Build/test output does not imply deployment or readiness for confidential client use.
+
+The first CI run passed the real MongoDB interrupted-initialization test. Its legacy API journey still expected jurisdiction-derived Nigeria obligations; that assertion was updated to require exactly three unique internal review tasks belonging to the new matter, all pending and without inferred deadlines. This reflects the intentional applicability-review change and does not weaken the assessment's acceptance cases.
