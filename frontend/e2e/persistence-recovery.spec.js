@@ -1,0 +1,45 @@
+const { test, expect } = require('@playwright/test');
+test('same-field competing tabs preserve saved work and offer the rejected draft for recovery', async ({ page, context }) => {
+  await page.goto('/#/matters/LS-2401/issues');
+  const other = await context.newPage();
+  await other.goto('/#/matters/LS-2401/issues');
+  const gate = await context.newPage();
+  await gate.goto('/');
+  await gate.evaluate(() => { window.lockHeld = false; navigator.locks.request('law-suite-workspace-v2', async () => { window.lockHeld = true; await new Promise(resolve => { window.releaseSaveLock = resolve; }); }); });
+  await expect.poll(() => gate.evaluate(() => window.lockHeld)).toBe(true);
+  await page.getByLabel('Review note').fill('First review kept as the canonical saved work.');
+  await other.getByLabel('Review note').fill('Second competing review remains recoverable.');
+  await gate.evaluate(() => window.releaseSaveLock());
+  await expect(other.getByRole('alert')).toContainText('Competing edits');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('law-suite-workspace-v2')));
+  expect(saved.matters[0].issues[0].draftNote).toBe('First review kept as the canonical saved work.');
+  const waiting = other.waitForEvent('download');
+  await other.getByRole('button', {name:'Download recovery copy'}).click();
+  const fs = require('node:fs/promises');
+  expect(await fs.readFile(await (await waiting).path(), 'utf8')).toContain('Second competing review');
+});
+test('an event saved immediately before refresh recovers while a competing tab holds the write lock', async ({ page, context }) => {
+  await page.goto('/#/applications/calendar');
+  const gate = await context.newPage(); await gate.goto('/');
+  await gate.evaluate(() => { navigator.locks.request('law-suite-vision-calendar', async () => { window.lockHeld = true; await new Promise(resolve => { window.releaseSaveLock = resolve; }); }); });
+  await expect.poll(() => gate.evaluate(() => window.lockHeld)).toBe(true);
+  await page.getByRole('button', { name:'Plan 2026-09-22', exact:true }).click();
+  await page.getByLabel('Event title').fill('Durable event before refresh');
+  await page.getByRole('button', { name:'Save planning event' }).click();
+  await page.reload();
+  await expect(page.locator('.v-calendar-grid')).toContainText('Durable event before refresh');
+  await gate.evaluate(() => window.releaseSaveLock());
+});
+test('calendar edit keeps the event identity and unknown request IDs never show a default client', async ({ page }) => {
+  await page.goto('/#/applications/calendar');
+  await page.getByRole('button', { name:'Edit Northstar internal review', exact:true }).click();
+  await page.getByLabel('Event title').fill('Revised internal review');
+  await page.getByLabel('Event date').fill('2026-09-24');
+  await page.getByRole('button', { name:'Save planning event' }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name:'Remove Revised internal review', exact:true })).toBeVisible();
+  await expect(page.getByRole('button', { name:'Plan 2026-09-24', exact:true })).toContainText('Revised internal review');
+  await page.goto('/#/ecommerce/orders/order-details?request=unknown');
+  await expect(page.getByRole('heading', { name:'Request not found' })).toBeVisible();
+  await expect(page.locator('.v-pages')).not.toContainText('Aster Manufacturing');
+});

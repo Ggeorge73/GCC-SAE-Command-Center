@@ -1,4 +1,6 @@
 import { sampleMatters } from "./matterReview";
+import { replayPending } from "./localRecords";
+import { validPractice } from "./practiceSchema";
 
 export const STORAGE_KEY = "law-suite-workspace-v2";
 export const actors = [
@@ -118,12 +120,33 @@ export function initialWorkspace() {
   };
 }
 
-export function loadWorkspace() {
+export function validWorkspace(saved) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     const expected = initialWorkspace();
     if (
       saved?.version === 2 &&
+      Array.isArray(saved.matters) &&
+      validPractice(saved.practice, saved.matters) &&
+      new Set(saved.matters.map((m) => m.id)).size === saved.matters.length &&
+      saved.matters.every(
+        (m) =>
+          typeof m.id === "string" &&
+          typeof m.name === "string" &&
+          typeof m.client === "string" &&
+          typeof m.owner === "string" &&
+          Array.isArray(m.issues) &&
+          m.issues.length &&
+          m.issues.every(
+            (i) =>
+              typeof i.draftNote === "string" &&
+              Array.isArray(i.notes) &&
+              Array.isArray(i.sources) &&
+              typeof i.statement === "string",
+          ) &&
+          Array.isArray(m.controls) &&
+          m.deadline &&
+          m.draftEdits,
+      ) &&
       saved.documents &&
       Array.isArray(saved.events) &&
       actors.includes(saved.actor) &&
@@ -158,9 +181,24 @@ export function loadWorkspace() {
       ) &&
       saved.matters.some((m) => m.id === saved.selectedId)
     )
-      return saved;
+      return true;
   } catch {
     /* A blocked store or old fixture must not prevent opening the demo. */
+  }
+  return false;
+}
+
+export function loadWorkspace() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = replayPending(
+      STORAGE_KEY,
+      raw || initialWorkspace(),
+      validWorkspace,
+    ).saved;
+    if (validWorkspace(saved)) return saved;
+  } catch {
+    /* Keep opening possible when storage is blocked. */
   }
   return initialWorkspace();
 }

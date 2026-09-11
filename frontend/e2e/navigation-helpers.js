@@ -29,10 +29,8 @@ async function goSection(page, name) {
     await expect(page.locator(".v-sidebar")).not.toHaveClass(/\bopen\b/);
 }
 async function openMatter(page, id, section) {
-  const selected = page.locator(".desk-tabs [aria-selected=true]");
-  const previous = (await selected.count())
-    ? (await selected.getAttribute("id")).replace("desk-tab-", "")
-    : "issues";
+  // Read once: the previous view can unmount between count() and getAttribute().
+  const previous = await page.evaluate(() => document.querySelector(".desk-tabs [aria-selected=true]")?.id.replace("desk-tab-", "") || "issues");
   await goSection(page, "Matter Review");
   await page.getByRole("button", { name: new RegExp(`^Open ${id} `) }).click();
   const target = section || previous;

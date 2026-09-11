@@ -1,12 +1,15 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Request, Header, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, ConfigDict, StringConstraints
+from typing import List, Optional, Dict, Any, Annotated, Literal
+from datetime import date
+import asyncio
+from pymongo.errors import DuplicateKeyError
 from google import genai
 from google.genai import types
 import uuid
@@ -63,11 +66,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ============== MODELS ==============
+RequiredName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=250)]
+ChecklistStatus = Literal["pending", "compliant", "overdue"]
+creation_lock = asyncio.Lock()
 
 class DealRoom(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str = Field(min_length=1, max_length=250)
+    name: RequiredName
     jurisdiction: str = "US (DELAWARE DGCL)"
     total_raise: Optional[str] = None
     primary_counsel: Optional[str] = None
@@ -76,7 +82,7 @@ class DealRoom(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class DealRoomCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=250)
+    name: RequiredName
     jurisdiction: str = "US (DELAWARE DGCL)"
     total_raise: Optional[str] = None
     primary_counsel: Optional[str] = None
@@ -93,9 +99,9 @@ class AdvisoryLog(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 class AdvisoryLogCreate(BaseModel):
-    deal_room_id: str
-    type: str
-    content: str
+    deal_room_id: RequiredName
+    type: Literal["strategic_directive", "legal_opinion", "user_query"]
+    content: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20000)]
     prompt_used: Optional[str] = None
     jurisdiction_context: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
@@ -104,20 +110,20 @@ class ComplianceChecklist(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     deal_room_id: str
-    name: str
+    name: RequiredName
     description: Optional[str] = None
-    status: str = "pending"  # "compliant" | "pending" | "overdue"
-    due_date: Optional[str] = None
+    status: ChecklistStatus = "pending"
+    due_date: Optional[date] = None
     regulatory_body: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ComplianceChecklistCreate(BaseModel):
-    deal_room_id: str
-    name: str
+    deal_room_id: RequiredName
+    name: RequiredName
     description: Optional[str] = None
-    status: str = "pending"
-    due_date: Optional[str] = None
+    status: ChecklistStatus = "pending"
+    due_date: Optional[date] = None
     regulatory_body: Optional[str] = None
 
 class DocumentMetadata(BaseModel):
@@ -171,30 +177,38 @@ async def root():
     return {"message": "Law Suite API - Enterprise Legal Advisory Workspace", "version": "1.0.0"}
 
 @api_router.post("/deal-rooms", response_model=DealRoom)
-async def create_deal_room(deal_room: DealRoomCreate):
+async def create_deal_room(deal_room: DealRoomCreate, idempotency_key: Optional[str] = Header(default=None, min_length=8, max_length=128)):
     """Create a new deal room"""
-    deal_obj = DealRoom(**deal_room.model_dump())
+    # The local prototype uses recoverable staging on standalone MongoDB.
+    # Only the final parent insert publishes the matter. A stable request key
+    # makes a retry resume the same initialization, including after a crash.
+    async with creation_lock:
+        return await initialize_matter(deal_room, idempotency_key)
+
+async def initialize_matter(deal_room, idempotency_key):
+    identity = str(uuid.uuid5(uuid.NAMESPACE_URL, "law-suite:" + idempotency_key)) if idempotency_key else str(uuid.uuid4())
+    payload_hash = hashlib.sha256(deal_room.model_dump_json().encode()).hexdigest()
+    existing = await db.deal_rooms.find_one({"id": identity}, {"_id": 0})
+    if existing:
+        if existing.get("initialization_hash") != payload_hash:
+            raise HTTPException(409, "Idempotency key was already used for different matter details")
+        return DealRoom(**existing)
+    deal_obj = DealRoom(id=identity, **deal_room.model_dump())
     doc = deal_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
-    await db.deal_rooms.insert_one(doc)
+    doc['_id'] = identity
+    doc['initialization_hash'] = payload_hash
     
     # Create default compliance checklists based on jurisdiction
     default_checklists = []
-    if "NIGERIA" in deal_obj.jurisdiction:
-        default_checklists = [
-            {"name": "CAMA 2020 Annual Returns", "regulatory_body": "CAC", "status": "pending"},
-            {"name": "NOTAP Certificate Status", "regulatory_body": "NOTAP", "status": "pending"},
-            {"name": "SEC Nigeria Private Placement", "regulatory_body": "SEC Nigeria", "status": "pending"},
-        ]
-    elif "DELAWARE" in deal_obj.jurisdiction or "US" in deal_obj.jurisdiction:
-        default_checklists = [
-            {"name": "SEC Form D Filing", "regulatory_body": "SEC", "status": "pending"},
-            {"name": "Delaware Franchise Tax", "regulatory_body": "Delaware DOS", "status": "pending"},
-            {"name": "Blue Sky Compliance", "regulatory_body": "State Securities", "status": "pending"},
-        ]
+    default_checklists = [
+        {"name": "Confirm scope and responsible lawyer", "regulatory_body": "Internal planning — applicability unverified", "status": "pending"},
+        {"name": "Document conflicts and engagement review", "regulatory_body": "Internal planning — not conflicts clearance", "status": "pending"},
+        {"name": "Identify applicable obligations and verified deadlines", "regulatory_body": "Requires matter-specific lawyer review", "status": "pending"},
+    ]
     
-    for checklist in default_checklists:
+    for index, checklist in enumerate(default_checklists):
         cl = ComplianceChecklist(
             deal_room_id=deal_obj.id,
             name=checklist["name"],
@@ -202,16 +216,31 @@ async def create_deal_room(deal_room: DealRoomCreate):
             status=checklist["status"]
         )
         cl_doc = cl.model_dump()
+        cl_doc['_id'] = f"{identity}:initial:{index}"
+        cl_doc['id'] = cl_doc['_id']
+        cl_doc['initialization_hash'] = payload_hash
         cl_doc['created_at'] = cl_doc['created_at'].isoformat()
         cl_doc['updated_at'] = cl_doc['updated_at'].isoformat()
-        await db.compliance_checklists.insert_one(cl_doc)
+        try:
+            await db.compliance_checklists.insert_one(cl_doc)
+        except DuplicateKeyError:
+            staged = await db.compliance_checklists.find_one({'_id': cl_doc['_id']})
+            if not staged or staged.get('initialization_hash') != payload_hash:
+                raise HTTPException(409, "Initialization key conflicts with staged details")
+    try:
+        await db.deal_rooms.insert_one(doc)
+    except DuplicateKeyError:
+        existing = await db.deal_rooms.find_one({'id': identity}, {'_id': 0})
+        if not existing or existing.get('initialization_hash') != payload_hash:
+            raise HTTPException(409, "Initialization conflict; retry using the original request details")
+        return DealRoom(**existing)
     
     return deal_obj
 
 @api_router.get("/deal-rooms", response_model=List[DealRoom])
-async def get_deal_rooms():
+async def get_deal_rooms(offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
     """Get all deal rooms"""
-    deal_rooms = await db.deal_rooms.find({}, {"_id": 0}).to_list(100)
+    deal_rooms = await db.deal_rooms.find({}, {"_id": 0}).sort("id", 1).skip(offset).to_list(limit)
     for dr in deal_rooms:
         if isinstance(dr.get('created_at'), str):
             dr['created_at'] = datetime.fromisoformat(dr['created_at'])
@@ -248,6 +277,7 @@ async def delete_deal_room(deal_room_id: str):
 @api_router.post("/advisory-logs", response_model=AdvisoryLog)
 async def create_advisory_log(log: AdvisoryLogCreate):
     """Create a new advisory log entry"""
+    await get_deal_room(log.deal_room_id)
     log_obj = AdvisoryLog(**log.model_dump())
     doc = log_obj.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
@@ -255,12 +285,13 @@ async def create_advisory_log(log: AdvisoryLogCreate):
     return log_obj
 
 @api_router.get("/advisory-logs/{deal_room_id}", response_model=List[AdvisoryLog])
-async def get_advisory_logs(deal_room_id: str):
+async def get_advisory_logs(deal_room_id: str, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
     """Get all advisory logs for a deal room"""
+    await get_deal_room(deal_room_id)
     logs = await db.advisory_logs.find(
         {"deal_room_id": deal_room_id}, 
         {"_id": 0}
-    ).sort("timestamp", -1).to_list(100)
+    ).sort([("timestamp", -1), ("id", 1)]).skip(offset).to_list(limit)
     for log in logs:
         if isinstance(log.get('timestamp'), str):
             log['timestamp'] = datetime.fromisoformat(log['timestamp'])
@@ -271,20 +302,25 @@ async def get_advisory_logs(deal_room_id: str):
 @api_router.post("/compliance-checklists", response_model=ComplianceChecklist)
 async def create_compliance_checklist(checklist: ComplianceChecklistCreate):
     """Create a new compliance checklist item"""
+    if not await db.deal_rooms.find_one({"id": checklist.deal_room_id}, {"id": 1}):
+        raise HTTPException(404, "Matter not found")
     cl_obj = ComplianceChecklist(**checklist.model_dump())
     doc = cl_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
+    if doc['due_date'] is not None:
+        doc['due_date'] = doc['due_date'].isoformat()
     await db.compliance_checklists.insert_one(doc)
     return cl_obj
 
 @api_router.get("/compliance-checklists/{deal_room_id}", response_model=List[ComplianceChecklist])
-async def get_compliance_checklists(deal_room_id: str):
+async def get_compliance_checklists(deal_room_id: str, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
     """Get all compliance checklists for a deal room"""
+    await get_deal_room(deal_room_id)
     checklists = await db.compliance_checklists.find(
         {"deal_room_id": deal_room_id}, 
         {"_id": 0}
-    ).to_list(50)
+    ).sort("id", 1).skip(offset).to_list(limit)
     for cl in checklists:
         if isinstance(cl.get('created_at'), str):
             cl['created_at'] = datetime.fromisoformat(cl['created_at'])
@@ -293,13 +329,14 @@ async def get_compliance_checklists(deal_room_id: str):
     return checklists
 
 @api_router.put("/compliance-checklists/{checklist_id}")
-async def update_compliance_checklist(checklist_id: str, status: str = Form(...)):
+async def update_compliance_checklist(checklist_id: str, status: ChecklistStatus = Form(...)):
     """Update compliance checklist status"""
     if status not in {"pending", "compliant", "overdue"}:
         raise HTTPException(status_code=422, detail="Invalid checklist status")
     result = await db.compliance_checklists.update_one(
         {"id": checklist_id},
-        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()},
+         "$push": {"history": {"status": status, "at": datetime.now(timezone.utc).isoformat(), "actor": "unauthenticated local demo"}}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Checklist not found")
@@ -375,8 +412,9 @@ async def upload_document(
     }
 
 @api_router.get("/documents/{deal_room_id}")
-async def get_documents(deal_room_id: str, folder: Optional[str] = None):
+async def get_documents(deal_room_id: str, folder: Optional[str] = None, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
     """Get all documents for a deal room"""
+    await get_deal_room(deal_room_id)
     query = {"deal_room_id": deal_room_id}
     if folder:
         query["folder"] = folder
@@ -384,7 +422,7 @@ async def get_documents(deal_room_id: str, folder: Optional[str] = None):
     documents = await db.documents.find(
         query, 
         {"_id": 0, "file_content": 0}  # Exclude binary content
-    ).to_list(100)
+    ).sort("id", 1).skip(offset).to_list(limit)
     
     for doc in documents:
         if isinstance(doc.get('uploaded_at'), str):

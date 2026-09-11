@@ -23,6 +23,7 @@ import {
   actors,
   STORAGE_KEY,
   loadWorkspace,
+  validWorkspace,
   initialWorkspace,
   changeWorkspace,
   readiness,
@@ -30,6 +31,7 @@ import {
   targetDate,
 } from "@/lib/matterWorkspace";
 import { exportMemorandum } from "@/lib/reviewMemorandum";
+import { useRecords } from "@/lib/localRecords";
 import DefaultDashboard from "./vision/DefaultDashboard";
 import MatterDirectory from "./MatterDirectory";
 import { directoryPath } from "@/lib/workspaceNavigation";
@@ -90,11 +92,15 @@ function Dialog({ title, children, close }) {
   );
 }
 export default function MatterDesk({ route, onNavigate }) {
-  const [state, setState] = useState(loadWorkspace);
+  const [seed] = useState(loadWorkspace);
+  const [state, setState, storageError, downloadRecovery] = useRecords(
+    STORAGE_KEY,
+    seed,
+    validWorkspace,
+  );
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [view, setView] = useState("issues");
   const [notice, setNotice] = useState("");
-  const [storageError, setStorageError] = useState(false);
   const [modal, setModal] = useState(null);
   const [baseline, setBaseline] = useState(40);
   const [hours, setHours] = useState(18);
@@ -121,7 +127,7 @@ export default function MatterDesk({ route, onNavigate }) {
     }
     setNotice("");
     document.querySelector(".matter-desk")?.scrollTo({ top: 0 });
-  }, [route]);
+  }, [route, setState]);
   const unknownMatter =
     route.page === "detail" &&
     !state.matters.some((m) => m.id === route.matterId);
@@ -134,14 +140,6 @@ export default function MatterDesk({ route, onNavigate }) {
     matter.issues.find((i) => i.id === selectedIssue) || matter.issues[0];
   const assessment = readiness(matter);
   const events = state.events.filter((e) => e.matterId === matter.id);
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      setStorageError(false);
-    } catch {
-      setStorageError(true);
-    }
-  }, [state]);
   function dispatch(action, message) {
     try {
       const next = changeWorkspace(latestState.current, {
@@ -199,6 +197,12 @@ export default function MatterDesk({ route, onNavigate }) {
 
   return (
     <div className="matter-desk" data-testid="matter-desk">
+      {storageError && (
+        <div role="alert" className="desk-notice">
+          {storageError}{" "}
+          <button onClick={downloadRecovery}>Download recovery copy</button>
+        </div>
+      )}
       <div className="desk-page">
         <div
           className={`desk-topline ${route.page === "dashboard" ? "v-dashboard-topline" : ""}`}
@@ -1252,7 +1256,7 @@ export default function MatterDesk({ route, onNavigate }) {
           </strong>
           <span>
             {storageError
-              ? "Browser storage unavailable — progress lasts only while this page is open."
+              ? "Saved work needs attention; see the recovery notice."
               : "Demo saved in this browser · Fictional data only"}
           </span>
           <span>Evidence. Judgment. Forward.</span>

@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { loadWorkspace, targetDate } from "@/lib/matterWorkspace";
 import { navigateTo } from "@/lib/workspaceNavigation";
+import { useServices } from "./serviceRecords";
+import { usePractice } from "./PracticeDesk";
+import { practiceChange } from "@/lib/practiceRecords";
 import {
   Panel,
   Button,
@@ -189,7 +192,7 @@ export function Register({ requests = false }) {
                     onClick={() =>
                       navigateTo(
                         requests
-                          ? "/ecommerce/orders/order-details"
+                          ? `/ecommerce/orders/order-details?request=${encodeURIComponent(m.id)}`
                           : `/matters/${m.id}/issues`,
                       )
                     }
@@ -268,7 +271,13 @@ const initialEvents = [
   },
 ];
 export function LegalCalendar({ compact = false }) {
-  const [events, setEvents, error] = useLocal("calendar", initialEvents);
+  const [events, setEvents, error, recover] = useLocal(
+    "calendar",
+    initialEvents,
+  );
+  const [editing, setEditing] = useState(null);
+  const [eventQuery, setEventQuery] = useState("");
+  const [eventGroup, setEventGroup] = useState("All events");
   const [month, setMonth] = useState(new Date(2026, 8, 1));
   const [chosen, setChosen] = useState("");
   const [message, setMessage] = useState("");
@@ -346,21 +355,31 @@ export function LegalCalendar({ compact = false }) {
             className="v-event-form"
             onSubmit={(e) => {
               e.preventDefault();
-              setEvents([
-                ...events,
+              setEvents((current) => [
+                ...current.filter((item) => item.id !== editing),
                 {
-                  id: crypto.randomUUID(),
+                  id: editing || crypto.randomUUID(),
                   date: chosen,
                   time: start,
                   title: title.trim(),
                   practice,
                 },
               ]);
+              setEditing(null);
               setTitle("");
               setMessage("Planning event saved in this browser.");
             }}
           >
-            <h3>Plan {chosen}</h3>
+            <h3>
+              {editing ? "Edit event" : "Plan"} {chosen}
+            </h3>
+            <Field
+              label="Event date"
+              type="date"
+              required
+              value={chosen}
+              onChange={(e) => setChosen(e.target.value)}
+            />
             <div className="v-form-grid">
               <Field
                 label="Event title"
@@ -392,18 +411,48 @@ export function LegalCalendar({ compact = false }) {
           </form>
         )}
         <StatusMessage>{error || message}</StatusMessage>
+        {error && (
+          <Button secondary onClick={recover}>
+            Download recovery copy
+          </Button>
+        )}
       </Panel>
       {!compact && (
         <Panel
-          title="Upcoming events"
-          subtitle="Select a day to add an internal planning event."
+          title="Planning events"
+          subtitle="All events remain manageable. Times are local planning times; no reminders are delivered."
         >
           <Avatars />
+          <Field
+            label="Search events"
+            value={eventQuery}
+            onChange={(e) => setEventQuery(e.target.value)}
+          />
+          <label className="v-field">
+            <span>Event period</span>
+            <select
+              value={eventGroup}
+              onChange={(e) => setEventGroup(e.target.value)}
+            >
+              {["All events", "Upcoming", "Past"].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </label>
           {[...events]
+            .filter((e) =>
+              e.title.toLowerCase().includes(eventQuery.toLowerCase()),
+            )
+            .filter(
+              (e) =>
+                eventGroup === "All events" ||
+                (eventGroup === "Past"
+                  ? new Date(`${e.date}T${e.time}`) < new Date()
+                  : new Date(`${e.date}T${e.time}`) >= new Date()),
+            )
             .sort((a, b) =>
               `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`),
             )
-            .slice(0, 8)
             .map((e) => (
               <div className="v-event" key={e.id}>
                 <span className="v-icon">
@@ -416,6 +465,18 @@ export function LegalCalendar({ compact = false }) {
                   </p>
                   <small>{e.practice}</small>
                 </div>
+                <button
+                  aria-label={`Edit ${e.title}`}
+                  onClick={() => {
+                    setEditing(e.id);
+                    setChosen(e.date);
+                    setStart(e.time);
+                    setTitle(e.title);
+                    setPractice(e.practice);
+                  }}
+                >
+                  Edit
+                </button>
                 <button
                   aria-label={`Remove ${e.title}`}
                   onClick={() =>
@@ -562,6 +623,8 @@ export function ReviewBoard() {
   );
 }
 export function IntakeWizard({ kind = "wizard" }) {
+  const services = useServices();
+  const [, setWorkspace, workspaceError] = usePractice();
   const isUser = kind === "new-user",
     isService = kind === "new-product";
   const steps = isUser
@@ -622,8 +685,40 @@ export function IntakeWizard({ kind = "wizard" }) {
   const review = step >= fields.length;
   function next(e) {
     e.preventDefault();
+    if (
+      !review &&
+      fields[step].some(([key]) => !String(data[key] || "").trim())
+    ) {
+      setMessage("Enter a meaningful value for each required field.");
+      return;
+    }
     if (step < steps.length - 1) setStep(step + 1);
     else {
+      if (!isUser && !isService) {
+        const record = { ...data, id: data.id || crypto.randomUUID() };
+        try {
+          setWorkspace((current) =>
+            practiceChange(current, { type: "intake", record }),
+          );
+          setData(record);
+        } catch (failure) {
+          setMessage(failure.message);
+          return;
+        }
+      }
+      if (isService) {
+        const proposal = {
+          ...data,
+          id: data.id || crypto.randomUUID(),
+          status: "Draft",
+        };
+        services.setProposals((all) => [
+          ...all.filter((p) => p.id !== proposal.id),
+          proposal,
+        ]);
+        services.setSelected(proposal.id);
+        setData(proposal);
+      }
       setDone(true);
       setMessage(
         isUser
@@ -709,7 +804,22 @@ export function IntakeWizard({ kind = "wizard" }) {
             </div>
           )}
         </form>
-        <StatusMessage>{error || message}</StatusMessage>
+        <StatusMessage>{error || workspaceError || message}</StatusMessage>
+        <Button secondary type="button" onClick={() => { setData({}); setDone(false); setStep(0); setMessage("A new draft is ready. Previously saved intake and service records remain in their lists."); }}>Start another draft</Button>
+        {done && !isUser && (
+          <Button
+            secondary
+            onClick={() =>
+              navigateTo(
+                isService
+                  ? "/ecommerce/products/product-page"
+                  : "/applications/practice-desk",
+              )
+            }
+          >
+            {isService ? "Open saved service proposal" : "Review saved intake"}
+          </Button>
+        )}
         {done && (
           <Button
             secondary
